@@ -568,6 +568,7 @@ function applyNextRound() {
   state.history = [];
   state.resolution = null;
   state.currentPlayer = nextStarter(state.players, r.diceChangePlayer);
+  state.phase = 'bidding';
   return true;
 }
 
