@@ -59,13 +59,11 @@
     text-align: center;
   }
 
-  /* Typography */
   h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
   .muted { color: var(--muted); }
   .small { font-size: 13px; }
   .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
 
-  /* Layout primitives */
   .top {
     display: flex;
     align-items: baseline;
@@ -73,11 +71,9 @@
     gap: 12px;
   }
   .top .crumb { font-size: 13px; color: var(--muted); }
-  .stretch { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
   .row { display: flex; gap: 8px; }
   .row > * { flex: 1; }
 
-  /* Surfaces */
   .panel {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -98,8 +94,6 @@
   }
   .die.match { border-color: var(--accent); background: var(--accent-soft); }
   .die.hidden { background: var(--soft); border-color: var(--soft); box-shadow: none; }
-  .die.muted-die { background: var(--soft); border-color: var(--soft); }
-  .die.muted-die .pip { background: #c5beb1; }
   .pip {
     position: absolute;
     width: 5px; height: 5px;
@@ -117,11 +111,8 @@
 
   .dice-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: center; }
 
-  /* Bid display */
-  .bid {
-    text-align: center;
-    padding: 4px 0;
-  }
+  /* Bid */
+  .bid { text-align: center; padding: 4px 0; }
   .bid .by { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
   .bid .value { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
   .bid .num { color: var(--accent); }
@@ -158,6 +149,15 @@
   }
   .seat.me .seat-name { color: var(--ink); font-weight: 600; }
   .seat.dead .seat-name { text-decoration: line-through; }
+  .seat.active .seat-name::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 2px;
+    flex-shrink: 0;
+  }
   .seat .dice-row { justify-content: flex-end; flex-wrap: nowrap; }
   .tag {
     font-size: 10px;
@@ -170,6 +170,7 @@
     color: var(--muted);
   }
   .tag.bid { background: var(--accent-soft); color: var(--accent); }
+  .tag.offline { background: var(--danger-soft); color: var(--danger); }
 
   /* Picker */
   .face-row { display: flex; gap: 6px; justify-content: center; }
@@ -182,18 +183,10 @@
     transition: border-color 0.1s, background 0.1s;
   }
   .face-btn:hover:not(:disabled) { background: var(--soft); }
-  .face-btn[aria-pressed="true"] {
-    border-color: var(--accent);
-    background: var(--accent-soft);
-  }
+  .face-btn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
   .face-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 
-  .stepper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-  }
+  .stepper { display: flex; align-items: center; justify-content: center; gap: 14px; }
   .stepper .qty {
     font-size: 26px;
     font-weight: 600;
@@ -207,12 +200,9 @@
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--ink);
-    font-size: 18px;
-    line-height: 1;
+    font-size: 18px; line-height: 1;
     cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: inline-flex; align-items: center; justify-content: center;
     padding: 0;
   }
   .step-btn:hover:not(:disabled) { background: var(--soft); }
@@ -248,72 +238,77 @@
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--ink);
-    padding: 9px 12px;
-    border-radius: 8px;
+    padding: 11px 12px;
+    border-radius: 10px;
     font: inherit;
     width: 100%;
   }
   input[type="text"]:focus { outline: none; border-color: var(--accent); }
-
-  /* Setup */
-  .player-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 0;
+  input.code {
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 18px;
+    text-align: center;
+    padding-left: 18px;
   }
-  .player-row .num { width: 18px; color: var(--muted); font-size: 13px; }
-  .icon-btn {
-    width: 30px; height: 30px;
-    border-radius: 8px;
-    border: none;
-    background: transparent;
+
+  /* Menu / brand */
+  .brand-huge {
+    font-size: 44px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 2px;
+  }
+  .brand-sub {
     color: var(--muted);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    font-size: 14px;
+    margin-bottom: 32px;
   }
-  .icon-btn:hover { background: var(--soft); color: var(--ink); }
-  .row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-
-  /* Cover */
-  .cover {
-    flex: 1;
+  .form-stack {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+    gap: 10px;
+    width: 100%;
+    max-width: 280px;
+  }
+  .form-label {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: -4px;
+    align-self: flex-start;
+  }
+  .err {
+    font-size: 13px;
+    color: var(--danger);
     text-align: center;
-    user-select: none;
-    gap: 14px;
+    min-height: 18px;
   }
-  .cover .round-tag {
-    font-size: 11px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
+
+  /* Lobby */
+  .room-code {
+    font-size: 38px;
+    font-weight: 700;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    letter-spacing: 0.18em;
+    padding-left: 0.18em;
+    color: var(--ink);
   }
-  .cover .pass-to { font-size: 13px; color: var(--muted); }
-  .cover .target {
-    font-size: 32px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+  .lobby-player {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
   }
-  .cover .mark {
-    width: 56px; height: 56px;
-    border-radius: 14px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    display: grid;
-    place-items: center;
-    color: var(--muted);
-    font-size: 24px;
-    margin: 6px 0;
+  .lobby-player + .lobby-player { border-top: 1px solid var(--hairline); }
+  .lobby-name { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+  .online-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--good);
+    flex-shrink: 0;
   }
-  .cover .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .online-dot.offline { background: var(--muted); }
 
   /* Reveal */
   .reveal-row {
@@ -334,11 +329,7 @@
   .reveal-row .pip { width: 4px; height: 4px; }
 
   .verdict { text-align: center; padding: 10px 0 4px; }
-  .verdict .count {
-    font-size: 24px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
+  .verdict .count { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
   .verdict.right .count { color: var(--good); }
   .verdict.wrong .count { color: var(--danger); }
   .verdict .breakdown { font-size: 12px; color: var(--muted); margin-top: 2px; }
@@ -346,46 +337,21 @@
   .verdict .gone { font-size: 12px; color: var(--muted); margin-top: 6px; font-style: italic; }
 
   /* Game over */
-  .gameover {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    text-align: center;
-  }
   .gameover .trophy { font-size: 48px; }
   .gameover .name { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
   .gameover .tag { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
 
-  /* Setup */
-  .brand-big {
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    text-align: center;
-    margin: 8px 0 4px;
-  }
-  .brand-sub {
-    text-align: center;
-    color: var(--muted);
-    font-size: 13px;
-    margin-bottom: 18px;
-  }
-
-  /* Animation */
   .fade-in { animation: fade 0.16s ease-out; }
   @keyframes fade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 
-  /* Small phone tweaks */
   @media (max-height: 640px) {
     .die { width: 34px; height: 34px; border-radius: 7px; }
     .pip { width: 4px; height: 4px; }
     .stepper .qty { font-size: 22px; }
     .bid .value { font-size: 20px; }
-    main { gap: 10px; }
     .panel { padding: 12px 14px; }
+    .brand-huge { font-size: 36px; }
+    .room-code { font-size: 32px; }
   }
   @media (min-width: 480px) {
     .die { width: 42px; height: 42px; border-radius: 9px; }
@@ -399,20 +365,22 @@
 
 <main id="app"></main>
 
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="rules.js"></script>
 <script>
 
+// =================== State ===================
+
 let state = null;
+const PEER_PREFIX = 'spoton-x7k-';
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const START_DICE = 5;
+const MAX_PLAYERS = 6;
 
 function freshState() {
   return {
-    phase: 'setup',
-    players: [
-      { name: 'Player 1', dice: [], alive: true },
-      { name: 'Player 2', dice: [], alive: true },
-      { name: 'Player 3', dice: [], alive: true },
-    ],
-    startDice: 5,
+    phase: 'menu',
+    players: [],
     currentPlayer: 0,
     currentBid: null,
     lockedToOnes: false,
@@ -421,16 +389,27 @@ function freshState() {
     resolution: null,
     winner: null,
     bidDraft: null,
-    coverTarget: 0,
+    mp: {
+      mode: 'menu',
+      username: localStorage.getItem('spoton:name') || '',
+      roomCode: '',
+      peer: null,
+      conns: {},
+      hostPeerId: null,
+      myPlayerIdx: 0,
+      busy: false,
+      status: '',
+      createForm: { username: '' },
+      joinForm: { username: '', code: '' },
+    },
   };
 }
 
+// =================== Helpers ===================
+
 const PIPS = {
-  1: ['mc'],
-  2: ['tl', 'br'],
-  3: ['tl', 'mc', 'br'],
-  4: ['tl', 'tr', 'bl', 'br'],
-  5: ['tl', 'tr', 'mc', 'bl', 'br'],
+  1: ['mc'], 2: ['tl', 'br'], 3: ['tl', 'mc', 'br'],
+  4: ['tl', 'tr', 'bl', 'br'], 5: ['tl', 'tr', 'mc', 'bl', 'br'],
   6: ['tl', 'tr', 'ml', 'mr', 'bl', 'br'],
 };
 
@@ -438,7 +417,6 @@ function dieEl(face, opts = {}) {
   const e = document.createElement('div');
   const cls = ['die'];
   if (opts.match) cls.push('match');
-  if (opts.mutedDie) cls.push('muted-die');
   if (opts.hidden) cls.push('hidden');
   e.className = cls.join(' ');
   if (!opts.hidden) {
@@ -452,28 +430,23 @@ function dieEl(face, opts = {}) {
 }
 
 const FACE_WORD = ['', 'one', 'two', 'three', 'four', 'five', 'six'];
-
 function bidPhrase(bid) {
   return `${bid.quantity} ${FACE_WORD[bid.face]}${bid.quantity === 1 ? '' : 's'}`;
 }
-
 function findBidder(history) {
   for (let i = history.length - 1; i >= 0; i--) {
     if (history[i].action === 'bid') return history[i].player;
   }
   return null;
 }
-
 function totalDiceOnTable(players) {
   return players.reduce((s, p) => s + (p.alive ? p.dice.length : 0), 0);
 }
-
 function initialDraft(currentBid, locked) {
   if (!currentBid) return { quantity: 1, face: 3 };
   if (locked) return { quantity: currentBid.quantity + 1, face: 1 };
   return { quantity: currentBid.quantity + 1, face: currentBid.face };
 }
-
 function minQty(face, currentBid, locked) {
   if (!currentBid) return 1;
   if (locked) return currentBid.quantity + 1;
@@ -481,21 +454,39 @@ function minQty(face, currentBid, locked) {
   if (face === currentBid.face) return currentBid.quantity + 1;
   return Infinity;
 }
-
 function availableFaces(currentBid, locked) {
   if (locked) return [1];
   if (!currentBid) return [1, 2, 3, 4, 5, 6];
   return [2, 3, 4, 5, 6].filter(f => f >= currentBid.face);
 }
+function generateRoomCode() {
+  let c = '';
+  for (let i = 0; i < 4; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  return c;
+}
+function peerIdFor(code) { return PEER_PREFIX + code.toUpperCase(); }
 
-// ============ Actions ============
+function isHost() { return state.mp.mode === 'host'; }
 
-function start() {
-  state.players = state.players.map((p, i) => ({
-    name: (p.name || '').trim() || `Player ${i + 1}`,
-    dice: rollDice(state.startDice),
-    alive: true,
-  }));
+function ensureBidDraft() {
+  if (state.phase !== 'bidding') return;
+  if (state.currentPlayer !== state.mp.myPlayerIdx) { state.bidDraft = null; return; }
+  const ctx = `${state.currentBid ? state.currentBid.quantity + 'x' + state.currentBid.face : 'open'}-${state.lockedToOnes ? 'L' : 'U'}`;
+  if (!state.bidDraft || state.bidDraft._ctx !== ctx) {
+    state.bidDraft = initialDraft(state.currentBid, state.lockedToOnes);
+    state.bidDraft._ctx = ctx;
+  }
+}
+
+// =================== State mutators (host authoritative) ===================
+
+function applyStart() {
+  if (state.phase !== 'lobby') return false;
+  if (state.players.length < 2) return false;
+  for (const p of state.players) {
+    p.dice = rollDice(START_DICE);
+    p.alive = true;
+  }
   state.currentPlayer = 0;
   state.currentBid = null;
   state.lockedToOnes = false;
@@ -503,66 +494,59 @@ function start() {
   state.round = 1;
   state.resolution = null;
   state.winner = null;
-  toCover(0);
-}
-
-function toCover(idx) {
-  state.coverTarget = idx;
-  state.phase = 'cover';
-  render();
-}
-
-function revealAndPlay() {
-  state.currentPlayer = state.coverTarget;
-  state.bidDraft = initialDraft(state.currentBid, state.lockedToOnes);
   state.phase = 'bidding';
-  render();
+  return true;
 }
 
-function placeBid() {
-  const bid = state.bidDraft;
-  if (!isValidRaise(bid, state.currentBid, state.lockedToOnes)) return;
-  state.history.push({ player: state.currentPlayer, action: 'bid', bid });
+function applyBid(playerIdx, bid) {
+  if (state.phase !== 'bidding') return false;
+  if (state.currentPlayer !== playerIdx) return false;
+  if (!isValidRaise(bid, state.currentBid, state.lockedToOnes)) return false;
+  state.history.push({ player: playerIdx, action: 'bid', bid: { quantity: bid.quantity, face: bid.face } });
   if (!state.currentBid && bid.face === 1) state.lockedToOnes = true;
-  state.currentBid = bid;
-  toCover(nextAlivePlayer(state.players, state.currentPlayer));
+  state.currentBid = { quantity: bid.quantity, face: bid.face };
+  state.currentPlayer = nextAlivePlayer(state.players, state.currentPlayer);
+  return true;
 }
 
-function callLiar() {
-  if (!state.currentBid) return;
+function applyLiar(playerIdx) {
+  if (state.phase !== 'bidding') return false;
+  if (state.currentPlayer !== playerIdx) return false;
+  if (!state.currentBid) return false;
   const bidder = findBidder(state.history);
-  const caller = state.currentPlayer;
   const snapshot = state.players.map(p => p.alive ? p.dice.slice() : []);
   const r = resolveLiar(state.currentBid, snapshot.flat());
-  const loser = r.loser === 'caller' ? caller : bidder;
-  state.history.push({ player: caller, action: 'liar' });
+  const loser = r.loser === 'caller' ? playerIdx : bidder;
+  state.history.push({ player: playerIdx, action: 'liar' });
   state.phase = 'reveal';
   state.resolution = {
-    action: 'liar', caller, bidder,
+    action: 'liar', caller: playerIdx, bidder,
     bid: state.currentBid, snapshot,
     actualCount: r.actualCount, bidHolds: r.bidHolds,
     diceChangePlayer: loser, diceChange: -1,
   };
-  render();
+  return true;
 }
 
-function callSpotOn() {
-  if (!state.currentBid) return;
-  const caller = state.currentPlayer;
+function applySpotOn(playerIdx) {
+  if (state.phase !== 'bidding') return false;
+  if (state.currentPlayer !== playerIdx) return false;
+  if (!state.currentBid) return false;
   const snapshot = state.players.map(p => p.alive ? p.dice.slice() : []);
   const r = resolveSpotOn(state.currentBid, snapshot.flat());
-  state.history.push({ player: caller, action: 'spoton' });
+  state.history.push({ player: playerIdx, action: 'spoton' });
   state.phase = 'reveal';
   state.resolution = {
-    action: 'spoton', caller,
+    action: 'spoton', caller: playerIdx,
     bid: state.currentBid, snapshot,
     actualCount: r.actualCount, exact: r.exact,
-    diceChangePlayer: caller, diceChange: r.diceChange,
+    diceChangePlayer: playerIdx, diceChange: r.diceChange,
   };
-  render();
+  return true;
 }
 
-function nextRound() {
+function applyNextRound() {
+  if (state.phase !== 'reveal') return false;
   const r = state.resolution;
   const p = state.players[r.diceChangePlayer];
   const dc = applyDiceChange(p.dice.length, r.diceChange);
@@ -574,25 +558,388 @@ function nextRound() {
   }
   const winner = gameWinner(state.players);
   if (winner !== false) {
-    state.winner = winner;
+    state.winner = winner ? { name: winner.name } : null;
     state.phase = 'gameover';
-    render();
-    return;
+    return true;
   }
   state.round += 1;
   state.currentBid = null;
   state.lockedToOnes = false;
   state.history = [];
   state.resolution = null;
-  toCover(nextStarter(state.players, r.diceChangePlayer));
+  state.currentPlayer = nextStarter(state.players, r.diceChangePlayer);
+  return true;
 }
 
-function newGame() {
-  state = freshState();
+// =================== UI actions ===================
+
+function uiStart() {
+  if (!isHost()) return;
+  if (applyStart()) { broadcastState(); render(); }
+}
+
+function uiBid() {
+  const bid = state.bidDraft;
+  if (!bid || !isValidRaise(bid, state.currentBid, state.lockedToOnes)) return;
+  const payload = { quantity: bid.quantity, face: bid.face };
+  if (isHost()) {
+    if (applyBid(state.mp.myPlayerIdx, payload)) { broadcastState(); render(); }
+  } else {
+    sendToHost({ type: 'action', action: 'bid', bid: payload });
+  }
+}
+
+function uiLiar() {
+  if (isHost()) {
+    if (applyLiar(state.mp.myPlayerIdx)) { broadcastState(); render(); }
+  } else {
+    sendToHost({ type: 'action', action: 'liar' });
+  }
+}
+
+function uiSpotOn() {
+  if (isHost()) {
+    if (applySpotOn(state.mp.myPlayerIdx)) { broadcastState(); render(); }
+  } else {
+    sendToHost({ type: 'action', action: 'spoton' });
+  }
+}
+
+function uiNextRound() {
+  if (isHost()) {
+    if (applyNextRound()) { broadcastState(); render(); }
+  } else {
+    sendToHost({ type: 'action', action: 'nextRound' });
+  }
+}
+
+// =================== Peer plumbing ===================
+
+function sendToHost(msg) {
+  const conn = state.mp.conns[state.mp.hostPeerId];
+  if (conn && conn.open) {
+    try { conn.send(msg); } catch (e) { console.warn('send failed', e); }
+  }
+}
+
+function broadcastState() {
+  if (!isHost()) return;
+  for (const [peerId, conn] of Object.entries(state.mp.conns)) {
+    const idx = state.players.findIndex(p => p.peerId === peerId);
+    if (idx < 0 || !conn.open) continue;
+    try { conn.send({ type: 'state', state: snapshotFor(idx) }); }
+    catch (e) { console.warn('broadcast failed', e); }
+  }
+}
+
+function snapshotFor(playerIdx) {
+  return {
+    phase: state.phase,
+    round: state.round,
+    currentPlayer: state.currentPlayer,
+    currentBid: state.currentBid ? { quantity: state.currentBid.quantity, face: state.currentBid.face } : null,
+    lockedToOnes: state.lockedToOnes,
+    history: state.history,
+    winner: state.winner,
+    resolution: state.resolution,
+    players: state.players.map((p, i) => ({
+      name: p.name,
+      alive: p.alive,
+      online: p.online !== false,
+      dice: i === playerIdx ? p.dice.slice() : new Array(p.dice.length).fill(0),
+    })),
+    myPlayerIdx: playerIdx,
+    roomCode: state.mp.roomCode,
+  };
+}
+
+function applySnapshot(snap) {
+  state.phase = snap.phase;
+  state.round = snap.round;
+  state.currentPlayer = snap.currentPlayer;
+  state.currentBid = snap.currentBid;
+  state.lockedToOnes = snap.lockedToOnes;
+  state.history = snap.history;
+  state.players = snap.players;
+  state.resolution = snap.resolution;
+  state.winner = snap.winner;
+  state.mp.myPlayerIdx = snap.myPlayerIdx;
+  state.mp.roomCode = snap.roomCode;
+}
+
+// =================== Host / Client setup ===================
+
+function createPeerWithId(id) {
+  return new Promise((resolve, reject) => {
+    if (typeof Peer === 'undefined') { reject(new Error('Network library not loaded')); return; }
+    const peer = new Peer(id, { debug: 0 });
+    let settled = false;
+    const onOpen = () => {
+      if (settled) return;
+      settled = true;
+      peer.off && peer.off('error', onErr);
+      resolve(peer);
+    };
+    const onErr = (err) => {
+      if (settled) return;
+      settled = true;
+      try { peer.destroy(); } catch (e) {}
+      reject(err);
+    };
+    peer.on('open', onOpen);
+    peer.on('error', onErr);
+    setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        try { peer.destroy(); } catch (e) {}
+        reject(new Error('Timed out reaching the broker'));
+      }
+    }, 9000);
+  });
+}
+
+async function doCreate() {
+  const username = (state.mp.createForm.username || '').trim().slice(0, 20);
+  if (!username) return;
+  state.mp.busy = true;
+  state.mp.status = '';
+  render();
+  try {
+    localStorage.setItem('spoton:name', username);
+    state.mp.username = username;
+    let peer, code;
+    let lastErr;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      code = generateRoomCode();
+      try {
+        peer = await createPeerWithId(peerIdFor(code));
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (e && e.type !== 'unavailable-id') throw e;
+      }
+    }
+    if (!peer) throw lastErr || new Error('Could not create lobby');
+    state.mp.peer = peer;
+    state.mp.hostPeerId = peer.id;
+    state.mp.mode = 'host';
+    state.mp.roomCode = code;
+    state.mp.myPlayerIdx = 0;
+    state.players = [{
+      name: username, dice: [], alive: true, online: true, peerId: peer.id,
+    }];
+    state.phase = 'lobby';
+    state.mp.busy = false;
+    setupHostPeer(peer);
+    render();
+  } catch (e) {
+    console.error(e);
+    state.mp.busy = false;
+    state.mp.status = friendlyError(e, 'create');
+    state.phase = 'create';
+    render();
+  }
+}
+
+async function doJoin() {
+  const username = (state.mp.joinForm.username || '').trim().slice(0, 20);
+  const code = (state.mp.joinForm.code || '').toUpperCase();
+  if (!username || code.length !== 4) return;
+  state.mp.busy = true;
+  state.mp.status = '';
+  render();
+  try {
+    localStorage.setItem('spoton:name', username);
+    state.mp.username = username;
+    state.mp.mode = 'client';
+    if (typeof Peer === 'undefined') throw new Error('Network library not loaded');
+    const peer = new Peer({ debug: 0 });
+    state.mp.peer = peer;
+    await new Promise((resolve, reject) => {
+      let opened = false;
+      const onOpen = () => { opened = true; resolve(); };
+      const onErr = (err) => { if (!opened) reject(err); };
+      peer.on('open', onOpen);
+      peer.on('error', onErr);
+      setTimeout(() => { if (!opened) reject(new Error('Timed out reaching the broker')); }, 9000);
+    });
+    const hostId = peerIdFor(code);
+    const conn = peer.connect(hostId, { reliable: true });
+    state.mp.hostPeerId = hostId;
+    state.mp.conns[hostId] = conn;
+    await new Promise((resolve, reject) => {
+      let opened = false;
+      conn.on('open', () => {
+        opened = true;
+        try { conn.send({ type: 'join', username }); } catch (e) {}
+        resolve();
+      });
+      conn.on('data', (msg) => handleHostMessage(msg));
+      conn.on('close', () => {
+        if (state.mp.mode === 'client') {
+          state.mp.status = 'Lost connection to host';
+          teardownPeer();
+          state.phase = 'menu';
+          render();
+        }
+      });
+      conn.on('error', (err) => { if (!opened) reject(err); });
+      peer.on('error', (err) => {
+        if (!opened && err && err.type === 'peer-unavailable') {
+          reject(new Error(`Room ${code} not found`));
+        }
+      });
+      setTimeout(() => { if (!opened) reject(new Error(`Could not connect to room ${code}`)); }, 9000);
+    });
+    state.mp.busy = false;
+    render();
+  } catch (e) {
+    console.error(e);
+    teardownPeer();
+    state.mp.busy = false;
+    state.mp.status = friendlyError(e, 'join');
+    state.phase = 'join';
+    render();
+  }
+}
+
+function setupHostPeer(peer) {
+  peer.on('connection', (conn) => {
+    conn.on('open', () => { /* wait for join message */ });
+    conn.on('data', (msg) => {
+      if (msg && msg.type === 'join') handleJoinRequest(conn, msg);
+      else if (msg && msg.type === 'action') handleClientAction(conn, msg);
+    });
+    conn.on('close', () => {
+      const idx = state.players.findIndex(p => p.peerId === conn.peer);
+      delete state.mp.conns[conn.peer];
+      if (idx >= 0) {
+        if (state.phase === 'lobby') {
+          state.players.splice(idx, 1);
+          if (state.currentPlayer >= state.players.length) state.currentPlayer = 0;
+        } else {
+          state.players[idx].online = false;
+        }
+        broadcastState();
+        render();
+      }
+    });
+    conn.on('error', (err) => console.warn('conn error', err));
+  });
+  peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} });
+  peer.on('error', (err) => console.warn('peer error', err));
+}
+
+function handleJoinRequest(conn, msg) {
+  const username = (msg.username || '').trim().slice(0, 20) || 'Player';
+  state.mp.conns[conn.peer] = conn;
+  if (state.phase === 'lobby') {
+    if (state.players.length >= MAX_PLAYERS) {
+      safeSend(conn, { type: 'error', message: 'Room is full' });
+      setTimeout(() => { try { conn.close(); } catch (e) {} }, 200);
+      return;
+    }
+    let finalName = username;
+    let n = 2;
+    while (state.players.some(p => p.name === finalName)) finalName = `${username} ${n++}`;
+    const playerIdx = state.players.length;
+    state.players.push({
+      name: finalName, dice: [], alive: true, online: true, peerId: conn.peer,
+    });
+    safeSend(conn, { type: 'welcome', playerIdx, roomCode: state.mp.roomCode });
+    broadcastState();
+    render();
+  } else {
+    const existingIdx = state.players.findIndex(p => p.name === username && p.online === false);
+    if (existingIdx >= 0) {
+      state.players[existingIdx].online = true;
+      state.players[existingIdx].peerId = conn.peer;
+      safeSend(conn, { type: 'welcome', playerIdx: existingIdx, roomCode: state.mp.roomCode });
+      broadcastState();
+      render();
+    } else {
+      safeSend(conn, { type: 'error', message: 'Game already in progress' });
+      setTimeout(() => { try { conn.close(); } catch (e) {} }, 200);
+    }
+  }
+}
+
+function handleClientAction(conn, msg) {
+  const idx = state.players.findIndex(p => p.peerId === conn.peer);
+  if (idx < 0) return;
+  let ok = false;
+  switch (msg.action) {
+    case 'bid': ok = applyBid(idx, msg.bid); break;
+    case 'liar': ok = applyLiar(idx); break;
+    case 'spoton': ok = applySpotOn(idx); break;
+    case 'nextRound': ok = applyNextRound(); break;
+  }
+  if (ok) { broadcastState(); render(); }
+}
+
+function handleHostMessage(msg) {
+  if (!msg || !msg.type) return;
+  if (msg.type === 'welcome') {
+    state.mp.myPlayerIdx = msg.playerIdx;
+    state.mp.roomCode = msg.roomCode;
+  } else if (msg.type === 'state') {
+    applySnapshot(msg.state);
+    render();
+  } else if (msg.type === 'error') {
+    state.mp.status = msg.message || 'Error';
+    teardownPeer();
+    state.phase = 'menu';
+    render();
+  } else if (msg.type === 'bye') {
+    state.mp.status = msg.reason || 'Host closed the room';
+    teardownPeer();
+    state.phase = 'menu';
+    render();
+  }
+}
+
+function safeSend(conn, msg) {
+  if (!conn || !conn.open) return;
+  try { conn.send(msg); } catch (e) { console.warn('send', e); }
+}
+
+function leaveRoom() {
+  if (isHost()) {
+    for (const conn of Object.values(state.mp.conns)) {
+      safeSend(conn, { type: 'bye', reason: 'Host closed the room' });
+    }
+  } else {
+    const conn = state.mp.conns[state.mp.hostPeerId];
+    if (conn) { try { conn.close(); } catch (e) {} }
+  }
+  teardownPeer();
+  state.phase = 'menu';
+  state.mp.status = '';
+  state.players = [];
   render();
 }
 
-// ============ DOM helpers ============
+function teardownPeer() {
+  if (state.mp.peer) {
+    try { state.mp.peer.destroy(); } catch (e) {}
+  }
+  state.mp.peer = null;
+  state.mp.conns = {};
+  state.mp.mode = 'menu';
+  state.mp.hostPeerId = null;
+  state.mp.myPlayerIdx = 0;
+}
+
+function friendlyError(e, ctx) {
+  if (!e) return 'Something went wrong';
+  if (e.message) return e.message;
+  if (e.type === 'peer-unavailable') return 'Room not found';
+  if (e.type === 'network') return 'Network error';
+  if (e.type === 'unavailable-id' && ctx === 'create') return 'Try again, room code collision';
+  return 'Could not connect';
+}
+
+// =================== DOM helper ===================
 
 function el(tag, attrs = {}, children = []) {
   const e = document.createElement(tag);
@@ -600,6 +947,7 @@ function el(tag, attrs = {}, children = []) {
     if (k === 'class') e.className = v;
     else if (k === 'onclick') e.onclick = v;
     else if (k === 'oninput') e.oninput = v;
+    else if (k === 'onkeydown') e.onkeydown = v;
     else if (k === 'style') e.style.cssText = v;
     else if (k === 'disabled') { if (v) e.disabled = true; }
     else if (k === 'ariaPressed') e.setAttribute('aria-pressed', v ? 'true' : 'false');
@@ -612,83 +960,209 @@ function el(tag, attrs = {}, children = []) {
   return e;
 }
 
+// =================== Render dispatcher ===================
+
 function render() {
   const app = document.getElementById('app');
   app.innerHTML = '';
-  const fn = { setup: renderSetup, cover: renderCover, bidding: renderPlay, reveal: renderReveal, gameover: renderGameOver }[state.phase];
+  ensureBidDraft();
+  const fns = {
+    menu: renderMenu,
+    create: renderCreateForm,
+    join: renderJoinForm,
+    lobby: renderLobby,
+    bidding: renderPlay,
+    reveal: renderReveal,
+    gameover: renderGameOver,
+  };
+  const fn = fns[state.phase];
+  if (!fn) { console.error('unknown phase', state.phase); return; }
   const node = fn();
   node.classList.add('fade-in');
   app.appendChild(node);
 }
 
-// ============ Screens ============
+// =================== Screens ===================
 
-function renderSetup() {
-  const wrap = document.createDocumentFragment();
+function renderMenu() {
+  const wrap = el('div', { class: 'screen center' });
+  wrap.appendChild(el('div', { class: 'brand-huge' }, 'Spot On'));
+  wrap.appendChild(el('div', { class: 'brand-sub' }, 'a liar’s dice variant'));
 
-  wrap.appendChild(el('div', { class: 'brand-big' }, 'Spot On'));
-  wrap.appendChild(el('div', { class: 'brand-sub' }, 'a liar’s dice variant'))
-
-  const panel = el('div', { class: 'panel' });
-  panel.appendChild(el('div', { class: 'label', style: 'margin-bottom: 8px;' }, 'Players'));
-
-  state.players.forEach((p, i) => {
-    const row = el('div', { class: 'player-row' });
-    row.appendChild(el('span', { class: 'num' }, String(i + 1)));
-    const input = el('input', { type: 'text', value: p.name, placeholder: `Player ${i + 1}` });
-    input.oninput = e => { state.players[i].name = e.target.value; };
-    row.appendChild(input);
-    if (state.players.length > 2) {
-      const rm = el('button', { class: 'icon-btn', title: 'Remove' }, '×');
-      rm.onclick = () => { state.players.splice(i, 1); render(); };
-      row.appendChild(rm);
-    }
-    panel.appendChild(row);
-  });
-
-  if (state.players.length < 6) {
-    const add = el('button', { class: 'btn ghost', style: 'margin-top: 6px;' }, '+ Add player');
-    add.onclick = () => {
-      state.players.push({ name: `Player ${state.players.length + 1}`, dice: [], alive: true });
-      render();
-    };
-    panel.appendChild(add);
+  const stack = el('div', { class: 'form-stack' });
+  if (state.mp.status) {
+    stack.appendChild(el('div', { class: 'err' }, state.mp.status));
   }
-
-  const diceRow = el('div', { class: 'row-between', style: 'margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hairline);' });
-  diceRow.appendChild(el('span', { class: 'small muted' }, 'Dice each'));
-  const step = el('div', { class: 'stepper' });
-  const m = el('button', { class: 'step-btn' }, '−');
-  m.disabled = state.startDice <= 1;
-  m.onclick = () => { state.startDice -= 1; render(); };
-  const q = el('span', { class: 'qty', style: 'font-size: 18px; min-width: 22px;' }, String(state.startDice));
-  const pl = el('button', { class: 'step-btn' }, '+');
-  pl.disabled = state.startDice >= 6;
-  pl.onclick = () => { state.startDice += 1; render(); };
-  step.appendChild(m); step.appendChild(q); step.appendChild(pl);
-  diceRow.appendChild(step);
-  panel.appendChild(diceRow);
-
-  const container = el('div', { style: 'flex: 1; min-height: 0; overflow-y: auto;' }, [panel]);
-  const startBtn = el('button', { class: 'btn primary full' }, 'Start game');
-  startBtn.onclick = start;
-
-  return el('div', { class: 'screen' }, [container, startBtn]);
+  const create = el('button', { class: 'btn primary full' }, 'Create lobby');
+  create.onclick = () => {
+    state.mp.createForm.username = state.mp.username;
+    state.mp.status = '';
+    state.phase = 'create';
+    render();
+  };
+  stack.appendChild(create);
+  const join = el('button', { class: 'btn full' }, 'Join lobby');
+  join.onclick = () => {
+    state.mp.joinForm.username = state.mp.username;
+    state.mp.joinForm.code = '';
+    state.mp.status = '';
+    state.phase = 'join';
+    render();
+  };
+  stack.appendChild(join);
+  wrap.appendChild(stack);
+  return wrap;
 }
 
-function renderCover() {
-  const target = state.players[state.coverTarget];
-  const wrap = el('div', { class: 'screen center cover' });
-  wrap.appendChild(el('div', { class: 'round-tag' }, `Round ${state.round}`));
-  wrap.appendChild(el('div', { class: 'mark' }, '?'));
-  wrap.appendChild(el('div', { class: 'pass-to' }, 'pass to'));
-  wrap.appendChild(el('div', { class: 'target' }, target.name));
-  wrap.appendChild(el('div', { class: 'hint' }, 'tap to reveal'));
-  wrap.onclick = revealAndPlay;
+function renderCreateForm() {
+  const wrap = el('div', { class: 'screen center' });
+  wrap.appendChild(el('div', { class: 'brand-huge', style: 'font-size: 28px; margin-bottom: 18px;' }, 'Your name'));
+
+  const stack = el('div', { class: 'form-stack' });
+  const create = el('button', { class: 'btn primary full' }, state.mp.busy ? 'Connecting' : 'Create lobby');
+  create.onclick = doCreate;
+  const updateValidity = () => {
+    create.disabled = state.mp.busy || !(state.mp.createForm.username || '').trim();
+  };
+
+  const input = el('input', {
+    type: 'text',
+    value: state.mp.createForm.username,
+    placeholder: 'Name',
+    maxlength: '20',
+    autocomplete: 'off',
+  });
+  input.oninput = (e) => { state.mp.createForm.username = e.target.value; updateValidity(); };
+  input.onkeydown = (e) => { if (e.key === 'Enter' && !create.disabled) doCreate(); };
+  stack.appendChild(input);
+  stack.appendChild(el('div', { class: 'err' }, state.mp.status || ''));
+  stack.appendChild(create);
+
+  const back = el('button', { class: 'btn ghost' }, 'Back');
+  back.onclick = () => { state.phase = 'menu'; state.mp.status = ''; render(); };
+  stack.appendChild(back);
+  wrap.appendChild(stack);
+
+  updateValidity();
+  setTimeout(() => input.focus(), 30);
+  return wrap;
+}
+
+function renderJoinForm() {
+  const wrap = el('div', { class: 'screen center' });
+  wrap.appendChild(el('div', { class: 'brand-huge', style: 'font-size: 28px; margin-bottom: 18px;' }, 'Join a lobby'));
+
+  const stack = el('div', { class: 'form-stack' });
+  const joinBtn = el('button', { class: 'btn primary full' }, state.mp.busy ? 'Connecting' : 'Join');
+  joinBtn.onclick = doJoin;
+  const updateValidity = () => {
+    joinBtn.disabled = state.mp.busy ||
+      !(state.mp.joinForm.username || '').trim() ||
+      (state.mp.joinForm.code || '').length !== 4;
+  };
+
+  const name = el('input', {
+    type: 'text',
+    value: state.mp.joinForm.username,
+    placeholder: 'Your name',
+    maxlength: '20',
+    autocomplete: 'off',
+  });
+  name.oninput = (e) => { state.mp.joinForm.username = e.target.value; updateValidity(); };
+  stack.appendChild(name);
+
+  const code = el('input', {
+    type: 'text',
+    class: 'code',
+    value: state.mp.joinForm.code,
+    placeholder: 'CODE',
+    maxlength: '4',
+    autocapitalize: 'characters',
+    autocorrect: 'off',
+    autocomplete: 'off',
+    spellcheck: 'false',
+  });
+  code.oninput = (e) => {
+    const clean = e.target.value.toUpperCase().replace(/[^A-Z2-9]/g, '').slice(0, 4);
+    state.mp.joinForm.code = clean;
+    e.target.value = clean;
+    updateValidity();
+  };
+  code.onkeydown = (e) => { if (e.key === 'Enter' && !joinBtn.disabled) doJoin(); };
+  stack.appendChild(code);
+
+  stack.appendChild(el('div', { class: 'err' }, state.mp.status || ''));
+  stack.appendChild(joinBtn);
+
+  const back = el('button', { class: 'btn ghost' }, 'Back');
+  back.onclick = () => { state.phase = 'menu'; state.mp.status = ''; render(); };
+  stack.appendChild(back);
+  wrap.appendChild(stack);
+
+  updateValidity();
+  setTimeout(() => name.focus(), 30);
+  return wrap;
+}
+
+function renderLobby() {
+  const wrap = el('div', { class: 'screen' });
+  wrap.appendChild(el('div', { class: 'top' }, [
+    el('h1', {}, 'Spot On'),
+    el('span', { class: 'crumb' }, isHost() ? 'hosting' : 'joined'),
+  ]));
+
+  const codePanel = el('div', { class: 'panel', style: 'text-align: center; padding: 18px;' });
+  codePanel.appendChild(el('div', { class: 'label', style: 'margin-bottom: 4px;' }, 'Room code'));
+  codePanel.appendChild(el('div', { class: 'room-code' }, state.mp.roomCode));
+  const copyRow = el('div', { style: 'margin-top: 6px;' });
+  const copy = el('button', { class: 'btn ghost', style: 'font-size: 12px; padding: 4px 10px;' }, 'copy');
+  copy.onclick = () => {
+    if (navigator.clipboard) navigator.clipboard.writeText(state.mp.roomCode);
+    copy.textContent = 'copied';
+    setTimeout(() => { copy.textContent = 'copy'; }, 1400);
+  };
+  copyRow.appendChild(copy);
+  codePanel.appendChild(copyRow);
+  wrap.appendChild(codePanel);
+
+  const list = el('div', { class: 'panel', style: 'flex: 1; min-height: 0; overflow-y: auto;' });
+  list.appendChild(el('div', { class: 'label', style: 'margin-bottom: 6px;' },
+    `Players (${state.players.length} of ${MAX_PLAYERS})`));
+  state.players.forEach((p, i) => {
+    const me = i === state.mp.myPlayerIdx;
+    const host = i === 0;
+    const row = el('div', { class: 'lobby-player' });
+    const name = el('div', { class: 'lobby-name' });
+    name.appendChild(el('span', {}, me ? `${p.name} (you)` : p.name));
+    if (host) name.appendChild(el('span', { class: 'tag' }, 'host'));
+    row.appendChild(name);
+    row.appendChild(el('span', { class: `online-dot${p.online === false ? ' offline' : ''}` }));
+    list.appendChild(row);
+  });
+  wrap.appendChild(list);
+
+  if (isHost()) {
+    const can = state.players.length >= 2;
+    const start = el('button', { class: 'btn primary full' }, can ? 'Start game' : 'Waiting for one more');
+    start.disabled = !can;
+    start.onclick = uiStart;
+    wrap.appendChild(start);
+  } else {
+    const hostName = state.players[0] ? state.players[0].name : 'host';
+    wrap.appendChild(el('div', { class: 'muted small', style: 'text-align:center; padding: 4px;' },
+      `Waiting for ${hostName} to start`));
+  }
+
+  const leave = el('button', { class: 'btn ghost' }, isHost() ? 'Close room' : 'Leave room');
+  leave.onclick = leaveRoom;
+  wrap.appendChild(leave);
   return wrap;
 }
 
 function renderPlay() {
+  const meIdx = state.mp.myPlayerIdx;
+  const me = state.players[meIdx];
+  const isMyTurn = state.currentPlayer === meIdx;
   const top = el('div', { class: 'top' }, [
     el('h1', {}, 'Spot On'),
     el('span', { class: 'crumb' }, `Round ${state.round}`),
@@ -699,26 +1173,47 @@ function renderPlay() {
   info.appendChild(el('div', { class: 'divider' }));
   info.appendChild(renderTable());
 
-  const picker = el('div', { class: 'panel' });
-  picker.appendChild(renderPicker());
+  let bottom, actions;
+  if (!me.alive) {
+    bottom = el('div', { class: 'panel', style: 'text-align:center; padding: 16px;' },
+      el('div', { class: 'muted small' }, 'you are out, watching the table'));
+  } else if (isMyTurn) {
+    const picker = el('div', { class: 'panel' });
+    picker.appendChild(renderPicker());
+    bottom = picker;
+    actions = renderActions();
+  } else {
+    const waiting = state.players[state.currentPlayer];
+    const offline = waiting && waiting.online === false;
+    bottom = el('div', { class: 'panel', style: 'text-align:center; padding: 16px;' },
+      el('div', { class: 'muted small' },
+        waiting
+          ? `waiting for ${waiting.name}${offline ? ' (offline)' : ''}`
+          : 'waiting'));
+  }
 
-  return el('div', { class: 'screen' }, [top, info, picker, renderActions()]);
+  const children = [top, info, bottom];
+  if (actions) children.push(actions);
+  return el('div', { class: 'screen' }, children);
 }
 
 function renderTable() {
   const wrap = el('div', { style: 'flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column;' });
+  const meIdx = state.mp.myPlayerIdx;
   const order = [];
-  state.players.forEach((p, i) => { if (i !== state.currentPlayer) order.push(i); });
-  order.push(state.currentPlayer);
-
+  state.players.forEach((p, i) => { if (i !== meIdx) order.push(i); });
+  order.push(meIdx);
   for (const i of order) {
     const p = state.players[i];
-    const isMe = i === state.currentPlayer;
+    const isMe = i === meIdx;
+    const isCurrent = i === state.currentPlayer;
     const dead = !p.alive;
-    const row = el('div', { class: `seat${isMe ? ' me' : ''}${dead ? ' dead' : ''}` });
-
-    row.appendChild(el('div', { class: 'seat-name' }, isMe ? 'You' : p.name));
-
+    const offline = p.online === false;
+    const row = el('div', { class: `seat${isMe ? ' me' : ''}${dead ? ' dead' : ''}${isCurrent && !dead ? ' active' : ''}` });
+    const nameEl = el('div', { class: 'seat-name' });
+    nameEl.appendChild(el('span', {}, isMe ? 'You' : p.name));
+    if (offline && !dead) nameEl.appendChild(el('span', { class: 'tag offline' }, 'off'));
+    row.appendChild(nameEl);
     const dr = el('div', { class: 'dice-row' });
     if (dead) {
       dr.appendChild(el('span', { class: 'small muted' }, 'out'));
@@ -737,7 +1232,9 @@ function renderBid() {
   const wrap = el('div', { class: 'bid' });
   if (state.currentBid) {
     const bidder = state.players[findBidder(state.history)];
-    wrap.appendChild(el('div', { class: 'by' }, `${bidder.name} bid`));
+    const bidderName = bidder ? (bidder.name || 'someone') : 'someone';
+    const isMe = findBidder(state.history) === state.mp.myPlayerIdx;
+    wrap.appendChild(el('div', { class: 'by' }, `${isMe ? 'You' : bidderName} bid`));
     wrap.appendChild(el('div', { class: 'value' }, [
       el('span', { class: 'num' }, String(state.currentBid.quantity)),
       ' ',
@@ -745,7 +1242,9 @@ function renderBid() {
       state.lockedToOnes ? el('span', { class: 'badge' }, 'ones') : null,
     ]));
   } else {
-    wrap.appendChild(el('div', { class: 'by' }, 'open the round'));
+    const opener = state.players[state.currentPlayer];
+    const isMe = state.currentPlayer === state.mp.myPlayerIdx;
+    wrap.appendChild(el('div', { class: 'by' }, isMe ? 'open the round' : `${opener ? opener.name : 'someone'} opens`));
     wrap.appendChild(el('div', { class: 'value muted' }, 'no bid yet'));
   }
   return wrap;
@@ -753,8 +1252,8 @@ function renderBid() {
 
 function renderPicker() {
   const draft = state.bidDraft;
+  if (!draft) return el('div', {}, '');
   const wrap = el('div', { style: 'display:flex; flex-direction:column; gap:10px;' });
-
   const faces = el('div', { class: 'face-row' });
   const available = availableFaces(state.currentBid, state.lockedToOnes);
   for (const f of [1, 2, 3, 4, 5, 6]) {
@@ -783,27 +1282,26 @@ function renderPicker() {
   plus.onclick = () => { draft.quantity += 1; render(); };
   step.appendChild(minus); step.appendChild(qty); step.appendChild(plus);
   wrap.appendChild(step);
-
   return wrap;
 }
 
 function renderActions() {
   const draft = state.bidDraft;
-  const valid = isValidRaise(draft, state.currentBid, state.lockedToOnes);
+  const valid = draft && isValidRaise(draft, state.currentBid, state.lockedToOnes);
   const wrap = el('div', { style: 'display:flex; flex-direction:column; gap:8px;' });
-
   const primary = el('button', { class: 'btn primary full' },
-    state.currentBid ? `Raise to ${bidPhrase(draft)}` : `Bid ${bidPhrase(draft)}`);
+    state.currentBid
+      ? (draft ? `Raise to ${bidPhrase(draft)}` : 'Raise')
+      : (draft ? `Bid ${bidPhrase(draft)}` : 'Bid'));
   primary.disabled = !valid;
-  primary.onclick = placeBid;
+  primary.onclick = uiBid;
   wrap.appendChild(primary);
-
   if (state.currentBid) {
     const row = el('div', { class: 'row' });
     const liar = el('button', { class: 'btn danger' }, 'Liar');
-    liar.onclick = callLiar;
+    liar.onclick = uiLiar;
     const spot = el('button', { class: 'btn' }, 'Spot on');
-    spot.onclick = callSpotOn;
+    spot.onclick = uiSpotOn;
     row.appendChild(liar); row.appendChild(spot);
     wrap.appendChild(row);
   }
@@ -817,13 +1315,19 @@ function renderReveal() {
     el('span', { class: 'crumb' }, `Round ${state.round}`),
   ]);
 
-  const caller = state.players[r.caller].name;
-  const bidder = r.action === 'liar' ? state.players[r.bidder].name : null;
+  const callerName = state.players[r.caller] ? state.players[r.caller].name : '?';
+  const bidder = r.action === 'liar' ? state.players[r.bidder] : null;
+  const bidderName = bidder ? bidder.name : '';
   const story = el('div', { class: 'panel', style: 'text-align:center; font-size:14px;' });
   if (r.action === 'liar') {
-    story.appendChild(el('span', {}, [el('strong', {}, caller), ' called liar on ', el('strong', {}, bidder), `'s ${bidPhrase(r.bid)}`]));
+    story.appendChild(el('span', {}, [
+      el('strong', {}, callerName), ' called liar on ',
+      el('strong', {}, bidderName), `'s ${bidPhrase(r.bid)}`,
+    ]));
   } else {
-    story.appendChild(el('span', {}, [el('strong', {}, caller), ` called spot on ${bidPhrase(r.bid)}`]));
+    story.appendChild(el('span', {}, [
+      el('strong', {}, callerName), ` called spot on ${bidPhrase(r.bid)}`,
+    ]));
   }
 
   const diceP = el('div', { class: 'panel', style: 'flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto;' });
@@ -833,7 +1337,7 @@ function renderReveal() {
     const gained = change && r.diceChange > 0;
     const lost = change && r.diceChange < 0;
     const row = el('div', { class: `reveal-row${gained ? ' gained' : ''}${lost ? ' lost' : ''}${dead ? ' dead' : ''}` });
-    row.appendChild(el('div', { class: 'name' }, p.name));
+    row.appendChild(el('div', { class: 'name' }, i === state.mp.myPlayerIdx ? 'You' : p.name));
     const dr = el('div', { class: 'dice-row' });
     const dice = r.snapshot[i] || [];
     if (dice.length === 0) {
@@ -852,7 +1356,7 @@ function renderReveal() {
 
   const btn = el('button', { class: 'btn primary full' },
     gameWinner(state.players) !== false ? 'See result' : 'Next round');
-  btn.onclick = nextRound;
+  btn.onclick = uiNextRound;
 
   return el('div', { class: 'screen' }, [top, story, diceP, btn]);
 }
@@ -862,24 +1366,25 @@ function renderVerdict(r) {
   const v = el('div', { class: `verdict ${positive ? 'right' : 'wrong'}` });
   const word = FACE_WORD[r.bid.face] + (r.actualCount === 1 ? '' : 's');
   v.appendChild(el('div', { class: 'count' }, `${r.actualCount} ${word}`));
-
   if (r.bid.face !== 1) {
     const wilds = r.snapshot.flat().filter(d => d === 1).length;
     if (wilds > 0) v.appendChild(el('div', { class: 'breakdown' }, `${r.actualCount - wilds} natural, ${wilds} wild`));
   }
-
-  const callerName = state.players[r.caller].name;
+  const callerName = state.players[r.caller] ? state.players[r.caller].name : '?';
   let line;
   if (r.action === 'liar') {
-    const bidderName = state.players[r.bidder].name;
-    line = r.bidHolds ? `${bidderName} had it. ${callerName} loses a die.` : `${bidderName} was bluffing. They lose a die.`;
+    const bidderName = state.players[r.bidder] ? state.players[r.bidder].name : '?';
+    line = r.bidHolds
+      ? `${bidderName} had it. ${callerName} loses a die.`
+      : `${bidderName} was bluffing. They lose a die.`;
   } else {
-    line = r.exact ? `Nailed it. ${callerName} gains a die.` : `Off. ${callerName} loses a die.`;
+    line = r.exact
+      ? `Nailed it. ${callerName} gains a die.`
+      : `Off. ${callerName} loses a die.`;
   }
   v.appendChild(el('div', { class: 'result' }, line));
-
   const target = state.players[r.diceChangePlayer];
-  if (r.diceChange < 0 && target.dice.length + r.diceChange <= 0) {
+  if (r.diceChange < 0 && target && target.dice.length + r.diceChange <= 0) {
     v.appendChild(el('div', { class: 'gone' }, `${target.name} is out.`));
   }
   return v;
@@ -890,14 +1395,25 @@ function renderGameOver() {
   wrap.appendChild(el('div', { class: 'trophy' }, '\u{1F3C6}'));
   wrap.appendChild(el('div', { class: 'name' }, state.winner ? state.winner.name : 'No one'));
   wrap.appendChild(el('div', { class: 'tag' }, 'takes the round'));
-  const btn = el('button', { class: 'btn primary' }, 'New game');
-  btn.onclick = newGame;
+  const btn = el('button', { class: 'btn primary' }, 'Back to menu');
+  btn.onclick = () => {
+    leaveRoom();
+  };
   wrap.appendChild(btn);
   return wrap;
 }
 
+// =================== Init ===================
+
 state = freshState();
 render();
+
+window.addEventListener('beforeunload', () => {
+  if (state && state.mp && state.mp.peer) {
+    try { state.mp.peer.destroy(); } catch (e) {}
+  }
+});
+
 </script>
 
 </body>
