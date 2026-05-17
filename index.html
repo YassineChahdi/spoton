@@ -2,118 +2,535 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Spot On — Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Spot On</title>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 900px; margin: 20px auto; padding: 0 20px; color: #222; }
-  h1 { margin-bottom: 0; }
-  .subtitle { color: #888; margin-top: 4px; font-size: 14px; }
-  .panel { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 16px 0; background: #fff; }
-  .player { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 4px; margin: 6px 0; background: #f9f9f9; }
-  .player.current { background: #fffbe6; border: 1px solid #f7d674; }
-  .player.eliminated { color: #aaa; background: #f0f0f0; }
-  .player.eliminated .name { text-decoration: line-through; }
-  .name { font-weight: 500; }
-  .dice { font-family: "Menlo", "Consolas", monospace; font-size: 18px; letter-spacing: 2px; }
-  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .controls input { width: 60px; padding: 4px; font-size: 16px; }
-  .controls select, .controls button { padding: 6px 12px; font-size: 14px; }
-  button { cursor: pointer; border: 1px solid #ccc; background: #fff; border-radius: 4px; }
-  button:hover:not(:disabled) { background: #f0f0f0; }
-  button:disabled { cursor: not-allowed; opacity: 0.4; }
-  .primary { background: #2e6cdf; color: #fff; border-color: #2e6cdf; }
-  .primary:hover:not(:disabled) { background: #2557b8; }
-  .danger { background: #d9534f; color: #fff; border-color: #d9534f; }
-  .danger:hover:not(:disabled) { background: #c43e3a; }
-  .history { max-height: 180px; overflow-y: auto; font-family: monospace; font-size: 13px; background: #fafafa; padding: 8px; border-radius: 4px; border: 1px solid #eee; }
-  .history p { margin: 2px 0; }
-  .bid-display { font-size: 20px; font-weight: 500; text-align: center; padding: 14px; background: #f4f7fb; border-radius: 6px; }
-  .locked-badge { display: inline-block; background: #fff3cd; color: #856404; padding: 3px 10px; border-radius: 4px; font-size: 13px; margin-left: 10px; }
-  .reveal { background: #eaf4ff; }
-  .reveal h3 { margin-top: 0; }
-  .winner { font-size: 28px; text-align: center; color: #2a8c3e; padding: 30px; }
-  .meta { font-size: 13px; color: #666; font-weight: normal; }
-  label { font-size: 14px; }
+  :root {
+    --bg: #f6f3ec;
+    --surface: #ffffff;
+    --border: #e7e1d4;
+    --hairline: #efeadf;
+    --ink: #1a1a1a;
+    --muted: #8a8275;
+    --soft: #efeae0;
+    --accent: #01736b;
+    --accent-deep: #015e58;
+    --accent-soft: #e6efed;
+    --danger: #a83232;
+    --danger-soft: #fbeaea;
+    --good: #2a8c5a;
+    --good-soft: #e6f1e9;
+    --r: 12px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  main {
+    max-width: 420px;
+    margin: 0 auto;
+    height: 100vh;
+    height: 100dvh;
+    padding: max(14px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+  }
+  #app {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .screen.center {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Typography */
+  h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* Layout primitives */
+  .top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .top .crumb { font-size: 13px; color: var(--muted); }
+  .stretch { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+
+  /* Surfaces */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 14px 16px;
+  }
+  .divider { height: 1px; background: var(--hairline); }
+
+  /* Dice */
+  .die {
+    position: relative;
+    width: 38px; height: 38px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 1.5px rgba(0,0,0,0.04);
+  }
+  .die.match { border-color: var(--accent); background: var(--accent-soft); }
+  .die.hidden { background: var(--soft); border-color: var(--soft); box-shadow: none; }
+  .die.muted-die { background: var(--soft); border-color: var(--soft); }
+  .die.muted-die .pip { background: #c5beb1; }
+  .pip {
+    position: absolute;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--ink);
+    transform: translate(-50%, -50%);
+  }
+  .pip-tl { top: 25%; left: 25%; }
+  .pip-tr { top: 25%; left: 75%; }
+  .pip-ml { top: 50%; left: 25%; }
+  .pip-mc { top: 50%; left: 50%; }
+  .pip-mr { top: 50%; left: 75%; }
+  .pip-bl { top: 75%; left: 25%; }
+  .pip-br { top: 75%; left: 75%; }
+
+  .dice-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: center; }
+
+  /* Bid display */
+  .bid {
+    text-align: center;
+    padding: 4px 0;
+  }
+  .bid .by { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+  .bid .value { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .bid .num { color: var(--accent); }
+  .badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--accent-soft);
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    vertical-align: 3px;
+  }
+
+  /* Table seats */
+  .seat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    gap: 10px;
+  }
+  .seat + .seat { border-top: 1px solid var(--hairline); }
+  .seat-name {
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    color: var(--muted);
+  }
+  .seat.me .seat-name { color: var(--ink); font-weight: 600; }
+  .seat.dead .seat-name { text-decoration: line-through; }
+  .seat .dice-row { justify-content: flex-end; flex-wrap: nowrap; }
+  .tag {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: var(--soft);
+    color: var(--muted);
+  }
+  .tag.bid { background: var(--accent-soft); color: var(--accent); }
+
+  /* Picker */
+  .face-row { display: flex; gap: 6px; justify-content: center; }
+  .face-btn {
+    border: 2px solid transparent;
+    background: transparent;
+    padding: 3px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.1s, background 0.1s;
+  }
+  .face-btn:hover:not(:disabled) { background: var(--soft); }
+  .face-btn[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .face-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+  }
+  .stepper .qty {
+    font-size: 26px;
+    font-weight: 600;
+    min-width: 40px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .step-btn {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .step-btn:hover:not(:disabled) { background: var(--soft); }
+  .step-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Buttons */
+  .btn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 11px 14px;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s, transform 0.05s;
+  }
+  .btn:hover:not(:disabled) { background: var(--soft); }
+  .btn:active:not(:disabled) { transform: scale(0.985); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn.primary:hover:not(:disabled) { background: var(--accent-deep); border-color: var(--accent-deep); }
+  .btn.danger { background: var(--surface); color: var(--danger); border-color: var(--danger); }
+  .btn.danger:hover:not(:disabled) { background: var(--danger); color: white; }
+  .btn.full { width: 100%; padding: 13px; font-size: 15px; }
+  .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); padding: 8px 10px; }
+  .btn.ghost:hover:not(:disabled) { background: var(--soft); color: var(--ink); }
+
+  /* Inputs */
+  input[type="text"] {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 9px 12px;
+    border-radius: 8px;
+    font: inherit;
+    width: 100%;
+  }
+  input[type="text"]:focus { outline: none; border-color: var(--accent); }
+
+  /* Setup */
+  .player-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  .player-row .num { width: 18px; color: var(--muted); font-size: 13px; }
+  .icon-btn {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { background: var(--soft); color: var(--ink); }
+  .row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+  /* Cover */
+  .cover {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-align: center;
+    user-select: none;
+    gap: 14px;
+  }
+  .cover .round-tag {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .cover .pass-to { font-size: 13px; color: var(--muted); }
+  .cover .target {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .cover .mark {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+    font-size: 24px;
+    margin: 6px 0;
+  }
+  .cover .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* Reveal */
+  .reveal-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    gap: 10px;
+  }
+  .reveal-row + .reveal-row { border-top: 1px solid var(--hairline); }
+  .reveal-row .name { font-size: 13px; font-weight: 500; min-width: 70px; }
+  .reveal-row.gained { background: var(--good-soft); margin: 0 -10px; padding: 8px 10px; border-radius: 8px; }
+  .reveal-row.lost { background: var(--danger-soft); margin: 0 -10px; padding: 8px 10px; border-radius: 8px; }
+  .reveal-row.gained + .reveal-row, .reveal-row.lost + .reveal-row { border-top-color: transparent; }
+  .reveal-row.dead .name { color: var(--muted); text-decoration: line-through; }
+  .reveal-row .dice-row { justify-content: flex-end; }
+  .reveal-row .die { width: 30px; height: 30px; border-radius: 7px; }
+  .reveal-row .pip { width: 4px; height: 4px; }
+
+  .verdict { text-align: center; padding: 10px 0 4px; }
+  .verdict .count {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .verdict.right .count { color: var(--good); }
+  .verdict.wrong .count { color: var(--danger); }
+  .verdict .breakdown { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .verdict .result { font-size: 14px; margin-top: 8px; }
+  .verdict .gone { font-size: 12px; color: var(--muted); margin-top: 6px; font-style: italic; }
+
+  /* Game over */
+  .gameover {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+  }
+  .gameover .trophy { font-size: 48px; }
+  .gameover .name { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
+  .gameover .tag { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+
+  /* Setup */
+  .brand-big {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-align: center;
+    margin: 8px 0 4px;
+  }
+  .brand-sub {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+
+  /* Animation */
+  .fade-in { animation: fade 0.16s ease-out; }
+  @keyframes fade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+  /* Small phone tweaks */
+  @media (max-height: 640px) {
+    .die { width: 34px; height: 34px; border-radius: 7px; }
+    .pip { width: 4px; height: 4px; }
+    .stepper .qty { font-size: 22px; }
+    .bid .value { font-size: 20px; }
+    main { gap: 10px; }
+    .panel { padding: 12px 14px; }
+  }
+  @media (min-width: 480px) {
+    .die { width: 42px; height: 42px; border-radius: 9px; }
+    .pip { width: 6px; height: 6px; }
+    .reveal-row .die { width: 32px; height: 32px; }
+    .reveal-row .pip { width: 4px; height: 4px; }
+  }
 </style>
 </head>
 <body>
 
-<h1>Spot On</h1>
-<p class="subtitle">A Liar's Dice variant · bare-bones prototype · all dice visible · local play</p>
-
-<div id="setup" class="panel">
-  <h3 style="margin-top:0">New game</h3>
-  <div class="controls">
-    <label>Players: <input type="number" id="numPlayers" min="2" max="6" value="3"></label>
-    <label>Starting dice: <input type="number" id="startDice" min="1" max="6" value="5"></label>
-    <button class="primary" id="startBtn">Start</button>
-  </div>
-</div>
-
-<div id="game" style="display:none">
-  <div class="panel"><div class="bid-display" id="bidDisplay"></div></div>
-  <div class="panel" id="playersPanel"></div>
-  <div class="panel" id="actionPanel"></div>
-  <div class="panel">
-    <h3 style="margin-top:0">History · Round <span id="roundNum"></span></h3>
-    <div class="history" id="history"></div>
-  </div>
-</div>
-
-<div id="reveal" class="panel reveal" style="display:none"></div>
-<div id="gameover" class="panel" style="display:none"></div>
+<main id="app"></main>
 
 <script src="rules.js"></script>
 <script>
-// ============ Game state ============
 
 let state = null;
 
-function startGame() {
-  const n = parseInt(document.getElementById('numPlayers').value);
-  const startDice = parseInt(document.getElementById('startDice').value);
-  if (!(n >= 2 && n <= 6) || !(startDice >= 1 && startDice <= 6)) {
-    alert('Players 2-6, dice 1-6');
-    return;
-  }
-  state = {
-    players: Array.from({length: n}, (_, i) => ({
-      name: `Player ${i + 1}`,
-      dice: rollDice(startDice),
-      alive: true,
-    })),
+function freshState() {
+  return {
+    phase: 'setup',
+    players: [
+      { name: 'Player 1', dice: [], alive: true },
+      { name: 'Player 2', dice: [], alive: true },
+      { name: 'Player 3', dice: [], alive: true },
+    ],
+    startDice: 5,
     currentPlayer: 0,
     currentBid: null,
     lockedToOnes: false,
     history: [],
-    phase: 'bidding',
     round: 1,
     resolution: null,
     winner: null,
+    bidDraft: null,
+    coverTarget: 0,
   };
-  document.getElementById('setup').style.display = 'none';
-  document.getElementById('game').style.display = 'block';
-  document.getElementById('gameover').style.display = 'none';
-  document.getElementById('reveal').style.display = 'none';
+}
+
+const PIPS = {
+  1: ['mc'],
+  2: ['tl', 'br'],
+  3: ['tl', 'mc', 'br'],
+  4: ['tl', 'tr', 'bl', 'br'],
+  5: ['tl', 'tr', 'mc', 'bl', 'br'],
+  6: ['tl', 'tr', 'ml', 'mr', 'bl', 'br'],
+};
+
+function dieEl(face, opts = {}) {
+  const e = document.createElement('div');
+  const cls = ['die'];
+  if (opts.match) cls.push('match');
+  if (opts.mutedDie) cls.push('muted-die');
+  if (opts.hidden) cls.push('hidden');
+  e.className = cls.join(' ');
+  if (!opts.hidden) {
+    for (const pos of PIPS[face] || []) {
+      const pip = document.createElement('i');
+      pip.className = `pip pip-${pos}`;
+      e.appendChild(pip);
+    }
+  }
+  return e;
+}
+
+const FACE_WORD = ['', 'one', 'two', 'three', 'four', 'five', 'six'];
+
+function bidPhrase(bid) {
+  return `${bid.quantity} ${FACE_WORD[bid.face]}${bid.quantity === 1 ? '' : 's'}`;
+}
+
+function findBidder(history) {
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].action === 'bid') return history[i].player;
+  }
+  return null;
+}
+
+function totalDiceOnTable(players) {
+  return players.reduce((s, p) => s + (p.alive ? p.dice.length : 0), 0);
+}
+
+function initialDraft(currentBid, locked) {
+  if (!currentBid) return { quantity: 1, face: 3 };
+  if (locked) return { quantity: currentBid.quantity + 1, face: 1 };
+  return { quantity: currentBid.quantity + 1, face: currentBid.face };
+}
+
+function minQty(face, currentBid, locked) {
+  if (!currentBid) return 1;
+  if (locked) return currentBid.quantity + 1;
+  if (face > currentBid.face) return currentBid.quantity;
+  if (face === currentBid.face) return currentBid.quantity + 1;
+  return Infinity;
+}
+
+function availableFaces(currentBid, locked) {
+  if (locked) return [1];
+  if (!currentBid) return [1, 2, 3, 4, 5, 6];
+  return [2, 3, 4, 5, 6].filter(f => f >= currentBid.face);
+}
+
+// ============ Actions ============
+
+function start() {
+  state.players = state.players.map((p, i) => ({
+    name: (p.name || '').trim() || `Player ${i + 1}`,
+    dice: rollDice(state.startDice),
+    alive: true,
+  }));
+  state.currentPlayer = 0;
+  state.currentBid = null;
+  state.lockedToOnes = false;
+  state.history = [];
+  state.round = 1;
+  state.resolution = null;
+  state.winner = null;
+  toCover(0);
+}
+
+function toCover(idx) {
+  state.coverTarget = idx;
+  state.phase = 'cover';
   render();
 }
 
-function placeBid(quantity, face) {
-  const newBid = { quantity, face };
-  if (!isValidRaise(newBid, state.currentBid, state.lockedToOnes)) {
-    alert('Invalid bid');
-    return;
-  }
-  state.history.push({ player: state.currentPlayer, action: 'bid', bid: newBid });
-  if (!state.currentBid && face === 1) state.lockedToOnes = true;
-  state.currentBid = newBid;
-  state.currentPlayer = nextAlivePlayer(state.players, state.currentPlayer);
+function revealAndPlay() {
+  state.currentPlayer = state.coverTarget;
+  state.bidDraft = initialDraft(state.currentBid, state.lockedToOnes);
+  state.phase = 'bidding';
   render();
+}
+
+function placeBid() {
+  const bid = state.bidDraft;
+  if (!isValidRaise(bid, state.currentBid, state.lockedToOnes)) return;
+  state.history.push({ player: state.currentPlayer, action: 'bid', bid });
+  if (!state.currentBid && bid.face === 1) state.lockedToOnes = true;
+  state.currentBid = bid;
+  toCover(nextAlivePlayer(state.players, state.currentPlayer));
 }
 
 function callLiar() {
   if (!state.currentBid) return;
-  const bidderEntry = [...state.history].reverse().find(h => h.action === 'bid');
-  const bidder = bidderEntry.player;
+  const bidder = findBidder(state.history);
   const caller = state.currentPlayer;
   const snapshot = state.players.map(p => p.alive ? p.dice.slice() : []);
   const r = resolveLiar(state.currentBid, snapshot.flat());
@@ -145,170 +562,342 @@ function callSpotOn() {
   render();
 }
 
-function continueToNextRound() {
+function nextRound() {
   const r = state.resolution;
   const p = state.players[r.diceChangePlayer];
   const dc = applyDiceChange(p.dice.length, r.diceChange);
-  if (dc.eliminated) {
-    p.alive = false;
-    p.dice = [];
-  }
+  if (dc.eliminated) { p.alive = false; p.dice = []; }
   for (const pl of state.players) {
     if (!pl.alive) continue;
-    const cnt = (pl === p) ? dc.newCount : pl.dice.length;
-    pl.dice = rollDice(cnt);
+    const count = pl === p ? dc.newCount : pl.dice.length;
+    pl.dice = rollDice(count);
   }
   const winner = gameWinner(state.players);
   if (winner !== false) {
-    state.phase = 'gameover';
     state.winner = winner;
+    state.phase = 'gameover';
     render();
     return;
   }
-  state.round++;
+  state.round += 1;
   state.currentBid = null;
   state.lockedToOnes = false;
   state.history = [];
-  state.phase = 'bidding';
   state.resolution = null;
-  state.currentPlayer = nextStarter(state.players, r.diceChangePlayer);
+  toCover(nextStarter(state.players, r.diceChangePlayer));
+}
+
+function newGame() {
+  state = freshState();
   render();
 }
 
-// ============ Rendering ============
+// ============ DOM helpers ============
 
-function diceString(dice) {
-  return dice.map(d => `[${d}]`).join(' ');
-}
-
-function bidText(bid) {
-  return `${bid.quantity} × ${bid.face}${bid.face === 1 ? 's (wild)' : "'s"}`;
+function el(tag, attrs = {}, children = []) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') e.className = v;
+    else if (k === 'onclick') e.onclick = v;
+    else if (k === 'oninput') e.oninput = v;
+    else if (k === 'style') e.style.cssText = v;
+    else if (k === 'disabled') { if (v) e.disabled = true; }
+    else if (k === 'ariaPressed') e.setAttribute('aria-pressed', v ? 'true' : 'false');
+    else e.setAttribute(k, v);
+  }
+  for (const c of [].concat(children)) {
+    if (c == null || c === false) continue;
+    e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return e;
 }
 
 function render() {
-  if (state.phase === 'gameover') { renderGameOver(); return; }
-  document.getElementById('roundNum').textContent = state.round;
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  const fn = { setup: renderSetup, cover: renderCover, bidding: renderPlay, reveal: renderReveal, gameover: renderGameOver }[state.phase];
+  const node = fn();
+  node.classList.add('fade-in');
+  app.appendChild(node);
+}
 
-  const bd = document.getElementById('bidDisplay');
-  if (state.currentBid) {
-    bd.innerHTML = `Current bid: <strong>${bidText(state.currentBid)}</strong>` +
-      (state.lockedToOnes ? '<span class="locked-badge">Locked to 1s</span>' : '');
-  } else {
-    bd.innerHTML = `<em>${state.players[state.currentPlayer].name} opens the round</em>`;
-  }
+// ============ Screens ============
 
-  const pp = document.getElementById('playersPanel');
-  pp.innerHTML = state.players.map((p, i) => {
-    const classes = ['player'];
-    if (i === state.currentPlayer && state.phase === 'bidding') classes.push('current');
-    if (!p.alive) classes.push('eliminated');
-    return `<div class="${classes.join(' ')}">
-      <span class="name">${p.name} <span class="meta">(${p.dice.length} dice)</span></span>
-      <span class="dice">${p.alive ? diceString(p.dice) : '—'}</span>
-    </div>`;
-  }).join('');
+function renderSetup() {
+  const wrap = document.createDocumentFragment();
 
-  const ap = document.getElementById('actionPanel');
-  if (state.phase === 'bidding') {
-    const minQ = state.currentBid ? state.currentBid.quantity : 1;
-    const faceOptions = state.lockedToOnes
-      ? [1]
-      : (state.currentBid ? [2,3,4,5,6].filter(f => f >= state.currentBid.face) : [2,3,4,5,6,1]);
-    const defaultFace = state.lockedToOnes ? 1 : (state.currentBid ? state.currentBid.face : 2);
-    ap.innerHTML = `
-      <h3 style="margin-top:0">${state.players[state.currentPlayer].name}'s turn</h3>
-      <div class="controls">
-        <label>Quantity: <input type="number" id="bidQuantity" min="${minQ}" value="${minQ}"></label>
-        <label>Face:
-          <select id="bidFace">
-            ${faceOptions.map(f => `<option value="${f}" ${f === defaultFace ? 'selected' : ''}>${f}${f === 1 ? ' — wild' : ''}</option>`).join('')}
-          </select>
-        </label>
-        <button class="primary" id="raiseBtn">${state.currentBid ? 'Raise' : 'Open bid'}</button>
-        <button class="danger" id="liarBtn" ${!state.currentBid ? 'disabled' : ''}>Call Liar</button>
-        <button id="spotonBtn" ${!state.currentBid ? 'disabled' : ''}>Spot On</button>
-      </div>
-      <p class="meta">Opening on 1s locks the round to 1s. Raises: count ≥ prev, face ≥ prev, at least one strictly greater. 1s wild unless bid is on 1s.</p>
-    `;
-    document.getElementById('raiseBtn').onclick = () => {
-      const q = parseInt(document.getElementById('bidQuantity').value);
-      const f = parseInt(document.getElementById('bidFace').value);
-      placeBid(q, f);
+  wrap.appendChild(el('div', { class: 'brand-big' }, 'Spot On'));
+  wrap.appendChild(el('div', { class: 'brand-sub' }, 'a liar’s dice variant'))
+
+  const panel = el('div', { class: 'panel' });
+  panel.appendChild(el('div', { class: 'label', style: 'margin-bottom: 8px;' }, 'Players'));
+
+  state.players.forEach((p, i) => {
+    const row = el('div', { class: 'player-row' });
+    row.appendChild(el('span', { class: 'num' }, String(i + 1)));
+    const input = el('input', { type: 'text', value: p.name, placeholder: `Player ${i + 1}` });
+    input.oninput = e => { state.players[i].name = e.target.value; };
+    row.appendChild(input);
+    if (state.players.length > 2) {
+      const rm = el('button', { class: 'icon-btn', title: 'Remove' }, '×');
+      rm.onclick = () => { state.players.splice(i, 1); render(); };
+      row.appendChild(rm);
+    }
+    panel.appendChild(row);
+  });
+
+  if (state.players.length < 6) {
+    const add = el('button', { class: 'btn ghost', style: 'margin-top: 6px;' }, '+ Add player');
+    add.onclick = () => {
+      state.players.push({ name: `Player ${state.players.length + 1}`, dice: [], alive: true });
+      render();
     };
-    document.getElementById('liarBtn').onclick = callLiar;
-    document.getElementById('spotonBtn').onclick = callSpotOn;
-    document.getElementById('reveal').style.display = 'none';
-  } else if (state.phase === 'reveal') {
-    ap.innerHTML = '';
-    renderReveal();
+    panel.appendChild(add);
   }
 
-  const h = document.getElementById('history');
-  h.innerHTML = state.history.map(entry => {
-    const name = state.players[entry.player].name;
-    if (entry.action === 'bid') return `<p>${name}: bid ${bidText(entry.bid)}</p>`;
-    if (entry.action === 'liar') return `<p>${name}: <strong>called LIAR</strong></p>`;
-    if (entry.action === 'spoton') return `<p>${name}: <strong>called SPOT ON</strong></p>`;
-    return '';
-  }).join('');
-  h.scrollTop = h.scrollHeight;
+  const diceRow = el('div', { class: 'row-between', style: 'margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hairline);' });
+  diceRow.appendChild(el('span', { class: 'small muted' }, 'Dice each'));
+  const step = el('div', { class: 'stepper' });
+  const m = el('button', { class: 'step-btn' }, '−');
+  m.disabled = state.startDice <= 1;
+  m.onclick = () => { state.startDice -= 1; render(); };
+  const q = el('span', { class: 'qty', style: 'font-size: 18px; min-width: 22px;' }, String(state.startDice));
+  const pl = el('button', { class: 'step-btn' }, '+');
+  pl.disabled = state.startDice >= 6;
+  pl.onclick = () => { state.startDice += 1; render(); };
+  step.appendChild(m); step.appendChild(q); step.appendChild(pl);
+  diceRow.appendChild(step);
+  panel.appendChild(diceRow);
+
+  const container = el('div', { style: 'flex: 1; min-height: 0; overflow-y: auto;' }, [panel]);
+  const startBtn = el('button', { class: 'btn primary full' }, 'Start game');
+  startBtn.onclick = start;
+
+  return el('div', { class: 'screen' }, [container, startBtn]);
+}
+
+function renderCover() {
+  const target = state.players[state.coverTarget];
+  const wrap = el('div', { class: 'screen center cover' });
+  wrap.appendChild(el('div', { class: 'round-tag' }, `Round ${state.round}`));
+  wrap.appendChild(el('div', { class: 'mark' }, '?'));
+  wrap.appendChild(el('div', { class: 'pass-to' }, 'pass to'));
+  wrap.appendChild(el('div', { class: 'target' }, target.name));
+  wrap.appendChild(el('div', { class: 'hint' }, 'tap to reveal'));
+  wrap.onclick = revealAndPlay;
+  return wrap;
+}
+
+function renderPlay() {
+  const top = el('div', { class: 'top' }, [
+    el('h1', {}, 'Spot On'),
+    el('span', { class: 'crumb' }, `Round ${state.round}`),
+  ]);
+
+  const info = el('div', { class: 'panel', style: 'flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px;' });
+  info.appendChild(renderBid());
+  info.appendChild(el('div', { class: 'divider' }));
+  info.appendChild(renderTable());
+
+  const picker = el('div', { class: 'panel' });
+  picker.appendChild(renderPicker());
+
+  return el('div', { class: 'screen' }, [top, info, picker, renderActions()]);
+}
+
+function renderTable() {
+  const wrap = el('div', { style: 'flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column;' });
+  const order = [];
+  state.players.forEach((p, i) => { if (i !== state.currentPlayer) order.push(i); });
+  order.push(state.currentPlayer);
+
+  for (const i of order) {
+    const p = state.players[i];
+    const isMe = i === state.currentPlayer;
+    const dead = !p.alive;
+    const row = el('div', { class: `seat${isMe ? ' me' : ''}${dead ? ' dead' : ''}` });
+
+    row.appendChild(el('div', { class: 'seat-name' }, isMe ? 'You' : p.name));
+
+    const dr = el('div', { class: 'dice-row' });
+    if (dead) {
+      dr.appendChild(el('span', { class: 'small muted' }, 'out'));
+    } else {
+      for (const d of p.dice) {
+        dr.appendChild(isMe ? dieEl(d) : dieEl(0, { hidden: true }));
+      }
+    }
+    row.appendChild(dr);
+    wrap.appendChild(row);
+  }
+  return wrap;
+}
+
+function renderBid() {
+  const wrap = el('div', { class: 'bid' });
+  if (state.currentBid) {
+    const bidder = state.players[findBidder(state.history)];
+    wrap.appendChild(el('div', { class: 'by' }, `${bidder.name} bid`));
+    wrap.appendChild(el('div', { class: 'value' }, [
+      el('span', { class: 'num' }, String(state.currentBid.quantity)),
+      ' ',
+      FACE_WORD[state.currentBid.face] + (state.currentBid.quantity === 1 ? '' : 's'),
+      state.lockedToOnes ? el('span', { class: 'badge' }, 'ones') : null,
+    ]));
+  } else {
+    wrap.appendChild(el('div', { class: 'by' }, 'open the round'));
+    wrap.appendChild(el('div', { class: 'value muted' }, 'no bid yet'));
+  }
+  return wrap;
+}
+
+function renderPicker() {
+  const draft = state.bidDraft;
+  const wrap = el('div', { style: 'display:flex; flex-direction:column; gap:10px;' });
+
+  const faces = el('div', { class: 'face-row' });
+  const available = availableFaces(state.currentBid, state.lockedToOnes);
+  for (const f of [1, 2, 3, 4, 5, 6]) {
+    const b = el('button', { class: 'face-btn', ariaPressed: draft.face === f });
+    b.appendChild(dieEl(f));
+    if (!available.includes(f)) b.disabled = true;
+    b.onclick = () => {
+      draft.face = f;
+      const m = minQty(f, state.currentBid, state.lockedToOnes);
+      if (draft.quantity < m) draft.quantity = m;
+      render();
+    };
+    faces.appendChild(b);
+  }
+  wrap.appendChild(faces);
+
+  const min = minQty(draft.face, state.currentBid, state.lockedToOnes);
+  const maxQty = Math.max(totalDiceOnTable(state.players), 99);
+  const step = el('div', { class: 'stepper' });
+  const minus = el('button', { class: 'step-btn' }, '−');
+  minus.disabled = draft.quantity <= min;
+  minus.onclick = () => { if (draft.quantity > min) { draft.quantity -= 1; render(); } };
+  const qty = el('span', { class: 'qty' }, String(draft.quantity));
+  const plus = el('button', { class: 'step-btn' }, '+');
+  plus.disabled = draft.quantity >= maxQty;
+  plus.onclick = () => { draft.quantity += 1; render(); };
+  step.appendChild(minus); step.appendChild(qty); step.appendChild(plus);
+  wrap.appendChild(step);
+
+  return wrap;
+}
+
+function renderActions() {
+  const draft = state.bidDraft;
+  const valid = isValidRaise(draft, state.currentBid, state.lockedToOnes);
+  const wrap = el('div', { style: 'display:flex; flex-direction:column; gap:8px;' });
+
+  const primary = el('button', { class: 'btn primary full' },
+    state.currentBid ? `Raise to ${bidPhrase(draft)}` : `Bid ${bidPhrase(draft)}`);
+  primary.disabled = !valid;
+  primary.onclick = placeBid;
+  wrap.appendChild(primary);
+
+  if (state.currentBid) {
+    const row = el('div', { class: 'row' });
+    const liar = el('button', { class: 'btn danger' }, 'Liar');
+    liar.onclick = callLiar;
+    const spot = el('button', { class: 'btn' }, 'Spot on');
+    spot.onclick = callSpotOn;
+    row.appendChild(liar); row.appendChild(spot);
+    wrap.appendChild(row);
+  }
+  return wrap;
 }
 
 function renderReveal() {
   const r = state.resolution;
-  const rd = document.getElementById('reveal');
-  rd.style.display = 'block';
+  const top = el('div', { class: 'top' }, [
+    el('h1', {}, 'Spot On'),
+    el('span', { class: 'crumb' }, `Round ${state.round}`),
+  ]);
 
-  const playerDiceHtml = state.players.map((p, i) =>
-    `<div class="player ${i === r.diceChangePlayer ? 'current' : ''} ${!p.alive ? 'eliminated' : ''}">
-      <span class="name">${p.name} <span class="meta">(${r.snapshot[i].length} dice)</span></span>
-      <span class="dice">${r.snapshot[i].length ? diceString(r.snapshot[i]) : '—'}</span>
-    </div>`
-  ).join('');
-
-  const wildNote = r.bid.face !== 1 ? ' (including wild 1s)' : '';
-  let summary;
+  const caller = state.players[r.caller].name;
+  const bidder = r.action === 'liar' ? state.players[r.bidder].name : null;
+  const story = el('div', { class: 'panel', style: 'text-align:center; font-size:14px;' });
   if (r.action === 'liar') {
-    const callerName = state.players[r.caller].name;
-    const bidderName = state.players[r.bidder].name;
-    summary = `<p><strong>${callerName}</strong> called LIAR on <strong>${bidderName}</strong>'s bid of ${bidText(r.bid)}.</p>
-      <p>Actual count of ${r.bid.face}s${wildNote}: <strong>${r.actualCount}</strong></p>
-      <p>${r.bidHolds
-        ? `Bid holds (${r.actualCount} ≥ ${r.bid.quantity}). <strong>${callerName}</strong> loses a die.`
-        : `Bid fails (${r.actualCount} &lt; ${r.bid.quantity}). <strong>${bidderName}</strong> loses a die.`}</p>`;
+    story.appendChild(el('span', {}, [el('strong', {}, caller), ' called liar on ', el('strong', {}, bidder), `'s ${bidPhrase(r.bid)}`]));
   } else {
-    const callerName = state.players[r.caller].name;
-    summary = `<p><strong>${callerName}</strong> called SPOT ON on the bid of ${bidText(r.bid)}.</p>
-      <p>Actual count of ${r.bid.face}s${wildNote}: <strong>${r.actualCount}</strong></p>
-      <p>${r.exact
-        ? `Exact! <strong>${callerName}</strong> gains a die.`
-        : `Not exact (${r.actualCount} ≠ ${r.bid.quantity}). <strong>${callerName}</strong> loses a die.`}</p>`;
+    story.appendChild(el('span', {}, [el('strong', {}, caller), ` called spot on ${bidPhrase(r.bid)}`]));
   }
 
-  rd.innerHTML = `<h3>Round ${state.round} resolution</h3>
-    ${summary}
-    <div>${playerDiceHtml}</div>
-    <div style="text-align:center; margin-top:14px">
-      <button class="primary" id="continueBtn">Continue to next round</button>
-    </div>`;
-  document.getElementById('continueBtn').onclick = continueToNextRound;
+  const diceP = el('div', { class: 'panel', style: 'flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto;' });
+  state.players.forEach((p, i) => {
+    const dead = !p.alive;
+    const change = i === r.diceChangePlayer;
+    const gained = change && r.diceChange > 0;
+    const lost = change && r.diceChange < 0;
+    const row = el('div', { class: `reveal-row${gained ? ' gained' : ''}${lost ? ' lost' : ''}${dead ? ' dead' : ''}` });
+    row.appendChild(el('div', { class: 'name' }, p.name));
+    const dr = el('div', { class: 'dice-row' });
+    const dice = r.snapshot[i] || [];
+    if (dice.length === 0) {
+      dr.appendChild(el('span', { class: 'small muted' }, 'out'));
+    } else {
+      for (const d of dice) {
+        const m = d === r.bid.face || (r.bid.face !== 1 && d === 1);
+        dr.appendChild(dieEl(d, { match: m }));
+      }
+    }
+    row.appendChild(dr);
+    diceP.appendChild(row);
+  });
+  diceP.appendChild(el('div', { class: 'divider', style: 'margin: 8px 0;' }));
+  diceP.appendChild(renderVerdict(r));
+
+  const btn = el('button', { class: 'btn primary full' },
+    gameWinner(state.players) !== false ? 'See result' : 'Next round');
+  btn.onclick = nextRound;
+
+  return el('div', { class: 'screen' }, [top, story, diceP, btn]);
+}
+
+function renderVerdict(r) {
+  const positive = (r.action === 'liar' && !r.bidHolds) || (r.action === 'spoton' && r.exact);
+  const v = el('div', { class: `verdict ${positive ? 'right' : 'wrong'}` });
+  const word = FACE_WORD[r.bid.face] + (r.actualCount === 1 ? '' : 's');
+  v.appendChild(el('div', { class: 'count' }, `${r.actualCount} ${word}`));
+
+  if (r.bid.face !== 1) {
+    const wilds = r.snapshot.flat().filter(d => d === 1).length;
+    if (wilds > 0) v.appendChild(el('div', { class: 'breakdown' }, `${r.actualCount - wilds} natural, ${wilds} wild`));
+  }
+
+  const callerName = state.players[r.caller].name;
+  let line;
+  if (r.action === 'liar') {
+    const bidderName = state.players[r.bidder].name;
+    line = r.bidHolds ? `${bidderName} had it. ${callerName} loses a die.` : `${bidderName} was bluffing. They lose a die.`;
+  } else {
+    line = r.exact ? `Nailed it. ${callerName} gains a die.` : `Off. ${callerName} loses a die.`;
+  }
+  v.appendChild(el('div', { class: 'result' }, line));
+
+  const target = state.players[r.diceChangePlayer];
+  if (r.diceChange < 0 && target.dice.length + r.diceChange <= 0) {
+    v.appendChild(el('div', { class: 'gone' }, `${target.name} is out.`));
+  }
+  return v;
 }
 
 function renderGameOver() {
-  document.getElementById('game').style.display = 'none';
-  document.getElementById('reveal').style.display = 'none';
-  const go = document.getElementById('gameover');
-  go.style.display = 'block';
-  const winnerText = state.winner ? `🏆 ${state.winner.name} wins!` : 'Game over';
-  go.innerHTML = `<div class="winner">${winnerText}</div>
-    <div style="text-align:center"><button class="primary" id="newGameBtn">New game</button></div>`;
-  document.getElementById('newGameBtn').onclick = () => {
-    document.getElementById('setup').style.display = 'block';
-    document.getElementById('gameover').style.display = 'none';
-  };
+  const wrap = el('div', { class: 'screen center gameover' });
+  wrap.appendChild(el('div', { class: 'trophy' }, '\u{1F3C6}'));
+  wrap.appendChild(el('div', { class: 'name' }, state.winner ? state.winner.name : 'No one'));
+  wrap.appendChild(el('div', { class: 'tag' }, 'takes the round'));
+  const btn = el('button', { class: 'btn primary' }, 'New game');
+  btn.onclick = newGame;
+  wrap.appendChild(btn);
+  return wrap;
 }
 
-document.getElementById('startBtn').onclick = startGame;
+state = freshState();
+render();
 </script>
 
 </body>
