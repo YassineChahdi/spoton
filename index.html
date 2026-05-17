@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Spot On — Prototype</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 900px; margin: 20px auto; padding: 0 20px; color: #222; }
+  h1 { margin-bottom: 0; }
+  .subtitle { color: #888; margin-top: 4px; font-size: 14px; }
+  .panel { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 16px 0; background: #fff; }
+  .player { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 4px; margin: 6px 0; background: #f9f9f9; }
+  .player.current { background: #fffbe6; border: 1px solid #f7d674; }
+  .player.eliminated { color: #aaa; background: #f0f0f0; }
+  .player.eliminated .name { text-decoration: line-through; }
+  .name { font-weight: 500; }
+  .dice { font-family: "Menlo", "Consolas", monospace; font-size: 18px; letter-spacing: 2px; }
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .controls input { width: 60px; padding: 4px; font-size: 16px; }
+  .controls select, .controls button { padding: 6px 12px; font-size: 14px; }
+  button { cursor: pointer; border: 1px solid #ccc; background: #fff; border-radius: 4px; }
+  button:hover:not(:disabled) { background: #f0f0f0; }
+  button:disabled { cursor: not-allowed; opacity: 0.4; }
+  .primary { background: #2e6cdf; color: #fff; border-color: #2e6cdf; }
+  .primary:hover:not(:disabled) { background: #2557b8; }
+  .danger { background: #d9534f; color: #fff; border-color: #d9534f; }
+  .danger:hover:not(:disabled) { background: #c43e3a; }
+  .history { max-height: 180px; overflow-y: auto; font-family: monospace; font-size: 13px; background: #fafafa; padding: 8px; border-radius: 4px; border: 1px solid #eee; }
+  .history p { margin: 2px 0; }
+  .bid-display { font-size: 20px; font-weight: 500; text-align: center; padding: 14px; background: #f4f7fb; border-radius: 6px; }
+  .locked-badge { display: inline-block; background: #fff3cd; color: #856404; padding: 3px 10px; border-radius: 4px; font-size: 13px; margin-left: 10px; }
+  .reveal { background: #eaf4ff; }
+  .reveal h3 { margin-top: 0; }
+  .winner { font-size: 28px; text-align: center; color: #2a8c3e; padding: 30px; }
+  .meta { font-size: 13px; color: #666; font-weight: normal; }
+  label { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<h1>Spot On</h1>
+<p class="subtitle">A Liar's Dice variant · bare-bones prototype · all dice visible · local play</p>
+
+<div id="setup" class="panel">
+  <h3 style="margin-top:0">New game</h3>
+  <div class="controls">
+    <label>Players: <input type="number" id="numPlayers" min="2" max="6" value="3"></label>
+    <label>Starting dice: <input type="number" id="startDice" min="1" max="6" value="5"></label>
+    <button class="primary" id="startBtn">Start</button>
+  </div>
+</div>
+
+<div id="game" style="display:none">
+  <div class="panel"><div class="bid-display" id="bidDisplay"></div></div>
+  <div class="panel" id="playersPanel"></div>
+  <div class="panel" id="actionPanel"></div>
+  <div class="panel">
+    <h3 style="margin-top:0">History · Round <span id="roundNum"></span></h3>
+    <div class="history" id="history"></div>
+  </div>
+</div>
+
+<div id="reveal" class="panel reveal" style="display:none"></div>
+<div id="gameover" class="panel" style="display:none"></div>
+
+<script src="rules.js"></script>
+<script>
+// ============ Game state ============
+
+let state = null;
+
+function startGame() {
+  const n = parseInt(document.getElementById('numPlayers').value);
+  const startDice = parseInt(document.getElementById('startDice').value);
+  if (!(n >= 2 && n <= 6) || !(startDice >= 1 && startDice <= 6)) {
+    alert('Players 2-6, dice 1-6');
+    return;
+  }
+  state = {
+    players: Array.from({length: n}, (_, i) => ({
+      name: `Player ${i + 1}`,
+      dice: rollDice(startDice),
+      alive: true,
+    })),
+    currentPlayer: 0,
+    currentBid: null,
+    lockedToOnes: false,
+    history: [],
+    phase: 'bidding',
+    round: 1,
+    resolution: null,
+    winner: null,
+  };
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('game').style.display = 'block';
+  document.getElementById('gameover').style.display = 'none';
+  document.getElementById('reveal').style.display = 'none';
+  render();
+}
+
+function placeBid(quantity, face) {
+  const newBid = { quantity, face };
+  if (!isValidRaise(newBid, state.currentBid, state.lockedToOnes)) {
+    alert('Invalid bid');
+    return;
+  }
+  state.history.push({ player: state.currentPlayer, action: 'bid', bid: newBid });
+  if (!state.currentBid && face === 1) state.lockedToOnes = true;
+  state.currentBid = newBid;
+  state.currentPlayer = nextAlivePlayer(state.players, state.currentPlayer);
+  render();
+}
+
+function callLiar() {
+  if (!state.currentBid) return;
+  const bidderEntry = [...state.history].reverse().find(h => h.action === 'bid');
+  const bidder = bidderEntry.player;
+  const caller = state.currentPlayer;
+  const snapshot = state.players.map(p => p.alive ? p.dice.slice() : []);
+  const r = resolveLiar(state.currentBid, snapshot.flat());
+  const loser = r.loser === 'caller' ? caller : bidder;
+  state.history.push({ player: caller, action: 'liar' });
+  state.phase = 'reveal';
+  state.resolution = {
+    action: 'liar', caller, bidder,
+    bid: state.currentBid, snapshot,
+    actualCount: r.actualCount, bidHolds: r.bidHolds,
+    diceChangePlayer: loser, diceChange: -1,
+  };
+  render();
+}
+
+function callSpotOn() {
+  if (!state.currentBid) return;
+  const caller = state.currentPlayer;
+  const snapshot = state.players.map(p => p.alive ? p.dice.slice() : []);
+  const r = resolveSpotOn(state.currentBid, snapshot.flat());
+  state.history.push({ player: caller, action: 'spoton' });
+  state.phase = 'reveal';
+  state.resolution = {
+    action: 'spoton', caller,
+    bid: state.currentBid, snapshot,
+    actualCount: r.actualCount, exact: r.exact,
+    diceChangePlayer: caller, diceChange: r.diceChange,
+  };
+  render();
+}
+
+function continueToNextRound() {
+  const r = state.resolution;
+  const p = state.players[r.diceChangePlayer];
+  const dc = applyDiceChange(p.dice.length, r.diceChange);
+  if (dc.eliminated) {
+    p.alive = false;
+    p.dice = [];
+  }
+  for (const pl of state.players) {
+    if (!pl.alive) continue;
+    const cnt = (pl === p) ? dc.newCount : pl.dice.length;
+    pl.dice = rollDice(cnt);
+  }
+  const winner = gameWinner(state.players);
+  if (winner !== false) {
+    state.phase = 'gameover';
+    state.winner = winner;
+    render();
+    return;
+  }
+  state.round++;
+  state.currentBid = null;
+  state.lockedToOnes = false;
+  state.history = [];
+  state.phase = 'bidding';
+  state.resolution = null;
+  state.currentPlayer = nextStarter(state.players, r.diceChangePlayer);
+  render();
+}
+
+// ============ Rendering ============
+
+function diceString(dice) {
+  return dice.map(d => `[${d}]`).join(' ');
+}
+
+function bidText(bid) {
+  return `${bid.quantity} × ${bid.face}${bid.face === 1 ? 's (wild)' : "'s"}`;
+}
+
+function render() {
+  if (state.phase === 'gameover') { renderGameOver(); return; }
+  document.getElementById('roundNum').textContent = state.round;
+
+  const bd = document.getElementById('bidDisplay');
+  if (state.currentBid) {
+    bd.innerHTML = `Current bid: <strong>${bidText(state.currentBid)}</strong>` +
+      (state.lockedToOnes ? '<span class="locked-badge">Locked to 1s</span>' : '');
+  } else {
+    bd.innerHTML = `<em>${state.players[state.currentPlayer].name} opens the round</em>`;
+  }
+
+  const pp = document.getElementById('playersPanel');
+  pp.innerHTML = state.players.map((p, i) => {
+    const classes = ['player'];
+    if (i === state.currentPlayer && state.phase === 'bidding') classes.push('current');
+    if (!p.alive) classes.push('eliminated');
+    return `<div class="${classes.join(' ')}">
+      <span class="name">${p.name} <span class="meta">(${p.dice.length} dice)</span></span>
+      <span class="dice">${p.alive ? diceString(p.dice) : '—'}</span>
+    </div>`;
+  }).join('');
+
+  const ap = document.getElementById('actionPanel');
+  if (state.phase === 'bidding') {
+    const minQ = state.currentBid ? state.currentBid.quantity : 1;
+    const faceOptions = state.lockedToOnes
+      ? [1]
+      : (state.currentBid ? [2,3,4,5,6].filter(f => f >= state.currentBid.face) : [2,3,4,5,6,1]);
+    const defaultFace = state.lockedToOnes ? 1 : (state.currentBid ? state.currentBid.face : 2);
+    ap.innerHTML = `
+      <h3 style="margin-top:0">${state.players[state.currentPlayer].name}'s turn</h3>
+      <div class="controls">
+        <label>Quantity: <input type="number" id="bidQuantity" min="${minQ}" value="${minQ}"></label>
+        <label>Face:
+          <select id="bidFace">
+            ${faceOptions.map(f => `<option value="${f}" ${f === defaultFace ? 'selected' : ''}>${f}${f === 1 ? ' — wild' : ''}</option>`).join('')}
+          </select>
+        </label>
+        <button class="primary" id="raiseBtn">${state.currentBid ? 'Raise' : 'Open bid'}</button>
+        <button class="danger" id="liarBtn" ${!state.currentBid ? 'disabled' : ''}>Call Liar</button>
+        <button id="spotonBtn" ${!state.currentBid ? 'disabled' : ''}>Spot On</button>
+      </div>
+      <p class="meta">Opening on 1s locks the round to 1s. Raises: count ≥ prev, face ≥ prev, at least one strictly greater. 1s wild unless bid is on 1s.</p>
+    `;
+    document.getElementById('raiseBtn').onclick = () => {
+      const q = parseInt(document.getElementById('bidQuantity').value);
+      const f = parseInt(document.getElementById('bidFace').value);
+      placeBid(q, f);
+    };
+    document.getElementById('liarBtn').onclick = callLiar;
+    document.getElementById('spotonBtn').onclick = callSpotOn;
+    document.getElementById('reveal').style.display = 'none';
+  } else if (state.phase === 'reveal') {
+    ap.innerHTML = '';
+    renderReveal();
+  }
+
+  const h = document.getElementById('history');
+  h.innerHTML = state.history.map(entry => {
+    const name = state.players[entry.player].name;
+    if (entry.action === 'bid') return `<p>${name}: bid ${bidText(entry.bid)}</p>`;
+    if (entry.action === 'liar') return `<p>${name}: <strong>called LIAR</strong></p>`;
+    if (entry.action === 'spoton') return `<p>${name}: <strong>called SPOT ON</strong></p>`;
+    return '';
+  }).join('');
+  h.scrollTop = h.scrollHeight;
+}
+
+function renderReveal() {
+  const r = state.resolution;
+  const rd = document.getElementById('reveal');
+  rd.style.display = 'block';
+
+  const playerDiceHtml = state.players.map((p, i) =>
+    `<div class="player ${i === r.diceChangePlayer ? 'current' : ''} ${!p.alive ? 'eliminated' : ''}">
+      <span class="name">${p.name} <span class="meta">(${r.snapshot[i].length} dice)</span></span>
+      <span class="dice">${r.snapshot[i].length ? diceString(r.snapshot[i]) : '—'}</span>
+    </div>`
+  ).join('');
+
+  const wildNote = r.bid.face !== 1 ? ' (including wild 1s)' : '';
+  let summary;
+  if (r.action === 'liar') {
+    const callerName = state.players[r.caller].name;
+    const bidderName = state.players[r.bidder].name;
+    summary = `<p><strong>${callerName}</strong> called LIAR on <strong>${bidderName}</strong>'s bid of ${bidText(r.bid)}.</p>
+      <p>Actual count of ${r.bid.face}s${wildNote}: <strong>${r.actualCount}</strong></p>
+      <p>${r.bidHolds
+        ? `Bid holds (${r.actualCount} ≥ ${r.bid.quantity}). <strong>${callerName}</strong> loses a die.`
+        : `Bid fails (${r.actualCount} &lt; ${r.bid.quantity}). <strong>${bidderName}</strong> loses a die.`}</p>`;
+  } else {
+    const callerName = state.players[r.caller].name;
+    summary = `<p><strong>${callerName}</strong> called SPOT ON on the bid of ${bidText(r.bid)}.</p>
+      <p>Actual count of ${r.bid.face}s${wildNote}: <strong>${r.actualCount}</strong></p>
+      <p>${r.exact
+        ? `Exact! <strong>${callerName}</strong> gains a die.`
+        : `Not exact (${r.actualCount} ≠ ${r.bid.quantity}). <strong>${callerName}</strong> loses a die.`}</p>`;
+  }
+
+  rd.innerHTML = `<h3>Round ${state.round} resolution</h3>
+    ${summary}
+    <div>${playerDiceHtml}</div>
+    <div style="text-align:center; margin-top:14px">
+      <button class="primary" id="continueBtn">Continue to next round</button>
+    </div>`;
+  document.getElementById('continueBtn').onclick = continueToNextRound;
+}
+
+function renderGameOver() {
+  document.getElementById('game').style.display = 'none';
+  document.getElementById('reveal').style.display = 'none';
+  const go = document.getElementById('gameover');
+  go.style.display = 'block';
+  const winnerText = state.winner ? `🏆 ${state.winner.name} wins!` : 'Game over';
+  go.innerHTML = `<div class="winner">${winnerText}</div>
+    <div style="text-align:center"><button class="primary" id="newGameBtn">New game</button></div>`;
+  document.getElementById('newGameBtn').onclick = () => {
+    document.getElementById('setup').style.display = 'block';
+    document.getElementById('gameover').style.display = 'none';
+  };
+}
+
+document.getElementById('startBtn').onclick = startGame;
+</script>
+
+</body>
+</html>

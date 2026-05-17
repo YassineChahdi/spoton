@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Spot On — Rules Tests</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 960px; margin: 20px auto; padding: 0 20px; color: #222; }
+  h1 { margin-bottom: 0; }
+  .subtitle { color: #888; margin-top: 4px; font-size: 14px; }
+  .summary { padding: 14px 18px; border-radius: 6px; margin: 16px 0; font-size: 18px; font-weight: 500; }
+  .summary.ok { background: #e6f7e6; color: #2a8c3e; border: 1px solid #b6e5b6; }
+  .summary.fail { background: #fde7e7; color: #b32a2a; border: 1px solid #f5b5b5; }
+  .group { border: 1px solid #ddd; border-radius: 8px; padding: 6px 14px 12px; margin: 12px 0; background: #fff; }
+  .group h3 { margin: 10px 0 4px; font-size: 16px; }
+  .group-meta { font-size: 12px; color: #888; margin-bottom: 8px; }
+  .test { font-family: "Menlo", monospace; font-size: 13px; padding: 3px 8px; border-radius: 3px; margin: 1px 0; line-height: 1.5; }
+  .test.pass { color: #2a8c3e; }
+  .test.pass::before { content: "✓ "; }
+  .test.fail { color: #b32a2a; background: #fde7e7; }
+  .test.fail::before { content: "✗ "; }
+  .error { font-family: monospace; font-size: 12px; color: #b32a2a; margin: 4px 0 4px 20px; white-space: pre-wrap; padding: 4px 8px; background: #fff; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<h1>Spot On — Rules Tests</h1>
+<p class="subtitle">Browser test runner for <code>rules.js</code></p>
+<div id="summary"></div>
+<div id="results"></div>
+
+<script src="rules.js"></script>
+<script>
+// ============ Tiny test framework ============
+const groups = [];
+let currentGroup = null;
+function describe(name, fn) { currentGroup = {name, tests: []}; groups.push(currentGroup); fn(); currentGroup = null; }
+function it(name, fn) { currentGroup.tests.push({name, fn}); }
+function assertEq(actual, expected, msg = '') {
+  const a = JSON.stringify(actual), e = JSON.stringify(expected);
+  if (a !== e) throw new Error(`${msg ? msg + '\n  ' : ''}expected: ${e}\n  actual:   ${a}`);
+}
+function assert(cond, msg = 'expected truthy') { if (!cond) throw new Error(msg); }
+function assertNot(cond, msg = 'expected falsy') { if (cond) throw new Error(msg); }
+
+// Helpers
+const mkPlayer = (count, alive = true, name = 'P') => ({name, dice: new Array(count).fill(0), alive});
+const mkPlayers = (...counts) => counts.map((c, i) => mkPlayer(c, true, `P${i+1}`));
+const mkPlayersAlive = (arr) => arr.map(([c, alive], i) => mkPlayer(c, alive, `P${i+1}`));
+
+// ============ countMatching ============
+describe('countMatching · 1s wild', () => {
+  it('counts only specified face when no 1s present', () => {
+    assertEq(countMatching([2,3,3,4,5], 3), 2);
+  });
+  it('counts 1s as wild when bid face != 1', () => {
+    assertEq(countMatching([1,2,3,3,1], 3), 4);
+  });
+  it('bid on 1s counts only 1s (no wild boost)', () => {
+    assertEq(countMatching([1,1,2,3,4], 1), 2);
+  });
+  it('bid on 1s with no 1s returns 0', () => {
+    assertEq(countMatching([2,3,4,5,6], 1), 0);
+  });
+  it('empty dice returns 0 for any face', () => {
+    for (let f = 1; f <= 6; f++) assertEq(countMatching([], f), 0);
+  });
+  it('no matches and no 1s returns 0', () => {
+    assertEq(countMatching([2,3,4,5,6], 1), 0);
+    assertEq(countMatching([2,2,2], 3), 0);
+  });
+  it('all 1s with bid on 3 counts all as wild', () => {
+    assertEq(countMatching([1,1,1,1,1], 3), 5);
+  });
+  it('all 1s with bid on 1 counts all', () => {
+    assertEq(countMatching([1,1,1,1,1], 1), 5);
+  });
+  it('mixed dice with bid on 6 includes wild 1s', () => {
+    assertEq(countMatching([6,6,1,2,3], 6), 3);
+  });
+  it('handles large dice pool (5 of each face)', () => {
+    const dice = [];
+    for (let i = 0; i < 5; i++) dice.push(1,2,3,4,5,6);
+    assertEq(countMatching(dice, 4), 10);
+    assertEq(countMatching(dice, 1), 5);
+    assertEq(countMatching(dice, 6), 10);
+  });
+  it('all same face, no 1s', () => {
+    assertEq(countMatching([4,4,4,4,4], 4), 5);
+    assertEq(countMatching([4,4,4,4,4], 1), 0);
+  });
+});
+
+// ============ isValidRaise — opener ============
+describe('isValidRaise · opener (no previous bid)', () => {
+  it('any valid face + quantity 1 → valid', () => {
+    for (let f = 1; f <= 6; f++) assert(isValidRaise({quantity:1, face:f}, null, false), `face ${f}`);
+  });
+  it('high quantity → valid (no upper cap)', () => {
+    assert(isValidRaise({quantity:100, face:6}, null, false));
+    assert(isValidRaise({quantity:9999, face:1}, null, false));
+  });
+  it('quantity 0 → invalid', () => {
+    assert(!isValidRaise({quantity:0, face:3}, null, false));
+  });
+  it('quantity negative → invalid', () => {
+    assert(!isValidRaise({quantity:-1, face:3}, null, false));
+  });
+  it('face 0 → invalid', () => {
+    assert(!isValidRaise({quantity:2, face:0}, null, false));
+  });
+  it('face 7 → invalid', () => {
+    assert(!isValidRaise({quantity:2, face:7}, null, false));
+  });
+  it('non-integer quantity → invalid', () => {
+    assert(!isValidRaise({quantity:2.5, face:3}, null, false));
+  });
+  it('non-integer face → invalid', () => {
+    assert(!isValidRaise({quantity:2, face:3.5}, null, false));
+  });
+  it('NaN values → invalid', () => {
+    assert(!isValidRaise({quantity:NaN, face:3}, null, false));
+    assert(!isValidRaise({quantity:2, face:NaN}, null, false));
+  });
+  it('opener on 1s is valid (round will lock)', () => {
+    assert(isValidRaise({quantity:1, face:1}, null, false));
+    assert(isValidRaise({quantity:7, face:1}, null, false));
+  });
+  it('lockedToOnes flag is ignored when there is no prev bid', () => {
+    assert(isValidRaise({quantity:3, face:5}, null, true));
+  });
+});
+
+// ============ isValidRaise — normal round ============
+describe('isValidRaise · normal round, prev = 4 of 3s', () => {
+  const prev = {quantity:4, face:3};
+  it('same count, higher face → valid (4×4, 4×5, 4×6)', () => {
+    for (let f = 4; f <= 6; f++) assert(isValidRaise({quantity:4, face:f}, prev, false), `4×${f}s`);
+  });
+  it('higher count, same face → valid', () => {
+    assert(isValidRaise({quantity:5, face:3}, prev, false));
+    assert(isValidRaise({quantity:10, face:3}, prev, false));
+  });
+  it('higher count, higher face → valid', () => {
+    assert(isValidRaise({quantity:5, face:4}, prev, false));
+    assert(isValidRaise({quantity:7, face:6}, prev, false));
+  });
+  it('same count, same face → invalid', () => {
+    assert(!isValidRaise({quantity:4, face:3}, prev, false));
+  });
+  it('same count, lower face → invalid', () => {
+    assert(!isValidRaise({quantity:4, face:2}, prev, false));
+  });
+  it('lower count, higher face → invalid', () => {
+    assert(!isValidRaise({quantity:3, face:6}, prev, false));
+  });
+  it('lower count, same face → invalid', () => {
+    assert(!isValidRaise({quantity:3, face:3}, prev, false));
+  });
+  it('lower count, lower face → invalid', () => {
+    assert(!isValidRaise({quantity:2, face:2}, prev, false));
+  });
+  it('cannot switch to 1s mid-round (same count)', () => {
+    assert(!isValidRaise({quantity:4, face:1}, prev, false));
+  });
+  it('cannot switch to 1s mid-round (higher count)', () => {
+    assert(!isValidRaise({quantity:5, face:1}, prev, false));
+    assert(!isValidRaise({quantity:100, face:1}, prev, false));
+  });
+});
+
+describe('isValidRaise · prev = 3 of 6s (max face boundary)', () => {
+  const prev = {quantity:3, face:6};
+  it('any face 2-5 is invalid (face must be >= 6)', () => {
+    for (let f = 2; f <= 5; f++) assert(!isValidRaise({quantity:5, face:f}, prev, false));
+  });
+  it('higher count of 6s → valid', () => {
+    assert(isValidRaise({quantity:4, face:6}, prev, false));
+    assert(isValidRaise({quantity:100, face:6}, prev, false));
+  });
+  it('same count of 6s → invalid', () => {
+    assert(!isValidRaise({quantity:3, face:6}, prev, false));
+  });
+  it('cannot switch to 1s', () => {
+    assert(!isValidRaise({quantity:10, face:1}, prev, false));
+  });
+});
+
+describe('isValidRaise · prev = 1 of 2s (min boundary)', () => {
+  const prev = {quantity:1, face:2};
+  it('1 of 3,4,5,6 → valid', () => {
+    for (let f = 3; f <= 6; f++) assert(isValidRaise({quantity:1, face:f}, prev, false));
+  });
+  it('2 of 2 → valid', () => {
+    assert(isValidRaise({quantity:2, face:2}, prev, false));
+  });
+  it('1 of 2 → invalid (same)', () => {
+    assert(!isValidRaise({quantity:1, face:2}, prev, false));
+  });
+});
+
+// ============ isValidRaise — locked to 1s ============
+describe('isValidRaise · locked to 1s, prev = 2 of 1s', () => {
+  const prev = {quantity:2, face:1};
+  it('higher count of 1s → valid', () => {
+    assert(isValidRaise({quantity:3, face:1}, prev, true));
+    assert(isValidRaise({quantity:100, face:1}, prev, true));
+  });
+  it('same count of 1s → invalid', () => {
+    assert(!isValidRaise({quantity:2, face:1}, prev, true));
+  });
+  it('lower count of 1s → invalid', () => {
+    assert(!isValidRaise({quantity:1, face:1}, prev, true));
+  });
+  it('any non-1 face → invalid (even higher count)', () => {
+    for (let f = 2; f <= 6; f++) assert(!isValidRaise({quantity:5, face:f}, prev, true), `5×${f}s when locked`);
+  });
+  it('any non-1 face with same count → invalid', () => {
+    for (let f = 2; f <= 6; f++) assert(!isValidRaise({quantity:2, face:f}, prev, true));
+  });
+});
+
+// ============ resolveLiar ============
+describe('resolveLiar', () => {
+  it('bid holds exactly (count == quantity) → caller loses', () => {
+    assertEq(resolveLiar({quantity:3, face:5}, [5,5,5,2,4]), {actualCount: 3, bidHolds: true, loser: 'caller'});
+  });
+  it('bid holds with margin → caller loses', () => {
+    assertEq(resolveLiar({quantity:2, face:5}, [5,5,5,2,4]), {actualCount: 3, bidHolds: true, loser: 'caller'});
+  });
+  it('bid fails → bidder loses', () => {
+    assertEq(resolveLiar({quantity:4, face:5}, [5,5,5,2,4]), {actualCount: 3, bidHolds: false, loser: 'bidder'});
+  });
+  it('with 1s as wild contributing — bid holds', () => {
+    assertEq(resolveLiar({quantity:4, face:3}, [3,3,1,1,4]), {actualCount: 4, bidHolds: true, loser: 'caller'});
+  });
+  it('with 1s as wild — bid fails', () => {
+    assertEq(resolveLiar({quantity:5, face:3}, [3,3,1,1,4]), {actualCount: 4, bidHolds: false, loser: 'bidder'});
+  });
+  it('bid on 1s — only 1s count, fails', () => {
+    assertEq(resolveLiar({quantity:3, face:1}, [1,1,2,3,4]), {actualCount: 2, bidHolds: false, loser: 'bidder'});
+  });
+  it('bid on 1s — only 1s count, exact', () => {
+    assertEq(resolveLiar({quantity:2, face:1}, [1,1,2,3,4]), {actualCount: 2, bidHolds: true, loser: 'caller'});
+  });
+  it('bid quantity 1 against 0 matches → bidder loses', () => {
+    assertEq(resolveLiar({quantity:1, face:6}, [2,3,4,5,2]), {actualCount: 0, bidHolds: false, loser: 'bidder'});
+  });
+  it('massive overcall → bidder loses', () => {
+    assertEq(resolveLiar({quantity:100, face:6}, [6,6,1,1,2]), {actualCount: 4, bidHolds: false, loser: 'bidder'});
+  });
+});
+
+// ============ resolveSpotOn ============
+describe('resolveSpotOn', () => {
+  it('exact match → caller gains die', () => {
+    assertEq(resolveSpotOn({quantity:3, face:5}, [5,5,5,2,4]), {actualCount: 3, exact: true, diceChange: +1});
+  });
+  it('count too high → caller loses', () => {
+    assertEq(resolveSpotOn({quantity:2, face:5}, [5,5,5,2,4]), {actualCount: 3, exact: false, diceChange: -1});
+  });
+  it('count too low → caller loses', () => {
+    assertEq(resolveSpotOn({quantity:4, face:5}, [5,5,5,2,4]), {actualCount: 3, exact: false, diceChange: -1});
+  });
+  it('exact with wilds contributing', () => {
+    assertEq(resolveSpotOn({quantity:4, face:3}, [3,3,1,1,4]), {actualCount: 4, exact: true, diceChange: +1});
+  });
+  it('exact on 1s — only 1s count', () => {
+    assertEq(resolveSpotOn({quantity:2, face:1}, [1,1,2,3,4]), {actualCount: 2, exact: true, diceChange: +1});
+  });
+  it('off-by-one high → caller loses', () => {
+    assertEq(resolveSpotOn({quantity:3, face:4}, [4,4,4,4,2]), {actualCount: 4, exact: false, diceChange: -1});
+  });
+  it('off-by-one low → caller loses', () => {
+    assertEq(resolveSpotOn({quantity:5, face:4}, [4,4,4,4,2]), {actualCount: 4, exact: false, diceChange: -1});
+  });
+});
+
+// ============ nextAlivePlayer ============
+describe('nextAlivePlayer', () => {
+  it('returns next player when all alive', () => {
+    const ps = mkPlayers(5,5,5);
+    assertEq(nextAlivePlayer(ps, 0), 1);
+    assertEq(nextAlivePlayer(ps, 1), 2);
+    assertEq(nextAlivePlayer(ps, 2), 0);
+  });
+  it('skips eliminated players', () => {
+    const ps = mkPlayersAlive([[5,true],[0,false],[5,true]]);
+    assertEq(nextAlivePlayer(ps, 0), 2);
+    assertEq(nextAlivePlayer(ps, 2), 0);
+  });
+  it('skips multiple consecutive eliminated', () => {
+    const ps = mkPlayersAlive([[5,true],[0,false],[0,false],[5,true]]);
+    assertEq(nextAlivePlayer(ps, 0), 3);
+    assertEq(nextAlivePlayer(ps, 3), 0);
+  });
+  it('starting on eliminated finds next alive', () => {
+    const ps = mkPlayersAlive([[5,true],[0,false],[5,true]]);
+    assertEq(nextAlivePlayer(ps, 1), 2);
+  });
+  it('returns same player when only one alive', () => {
+    const ps = mkPlayersAlive([[5,true],[0,false],[0,false]]);
+    assertEq(nextAlivePlayer(ps, 0), 0);
+  });
+  it('returns fromIdx when no players alive (degenerate)', () => {
+    const ps = mkPlayersAlive([[0,false],[0,false]]);
+    assertEq(nextAlivePlayer(ps, 0), 0);
+  });
+});
+
+// ============ nextStarter ============
+describe('nextStarter', () => {
+  it('returns dice-change player if still alive', () => {
+    const ps = mkPlayersAlive([[5,true],[4,true],[5,true]]);
+    assertEq(nextStarter(ps, 1), 1);
+  });
+  it('returns next alive if dice-change player was eliminated', () => {
+    const ps = mkPlayersAlive([[5,true],[0,false],[5,true]]);
+    assertEq(nextStarter(ps, 1), 2);
+  });
+  it('wraps around', () => {
+    const ps = mkPlayersAlive([[5,true],[5,true],[0,false]]);
+    assertEq(nextStarter(ps, 2), 0);
+  });
+  it('returns same player when others all eliminated (final winner edge)', () => {
+    const ps = mkPlayersAlive([[5,true],[0,false],[0,false]]);
+    assertEq(nextStarter(ps, 0), 0);
+  });
+});
+
+// ============ applyDiceChange ============
+describe('applyDiceChange', () => {
+  it('loses one die, stays alive', () => {
+    assertEq(applyDiceChange(5, -1), {newCount: 4, eliminated: false});
+  });
+  it('gains one die (no cap)', () => {
+    assertEq(applyDiceChange(5, +1), {newCount: 6, eliminated: false});
+    assertEq(applyDiceChange(10, +1), {newCount: 11, eliminated: false});
+    assertEq(applyDiceChange(0, +1), {newCount: 1, eliminated: false});
+  });
+  it('loses last die → eliminated', () => {
+    assertEq(applyDiceChange(1, -1), {newCount: 0, eliminated: true});
+  });
+  it('losing when already 0 stays eliminated', () => {
+    assertEq(applyDiceChange(0, -1), {newCount: 0, eliminated: true});
+  });
+});
+
+// ============ gameWinner ============
+describe('gameWinner', () => {
+  it('false when multiple alive', () => {
+    assertEq(gameWinner(mkPlayersAlive([[5,true],[5,true]])), false);
+    assertEq(gameWinner(mkPlayersAlive([[5,true],[3,true],[1,true]])), false);
+  });
+  it('returns winner when exactly one alive', () => {
+    const ps = mkPlayersAlive([[5,true],[0,false]]);
+    assertEq(gameWinner(ps).name, 'P1');
+  });
+  it('returns winner even with many eliminated', () => {
+    const ps = mkPlayersAlive([[0,false],[0,false],[3,true],[0,false]]);
+    assertEq(gameWinner(ps).name, 'P3');
+  });
+  it('returns null when no players alive', () => {
+    assertEq(gameWinner(mkPlayersAlive([[0,false],[0,false]])), null);
+  });
+});
+
+// ============ Integration / scenarios ============
+describe('integration · full round liar call (right)', () => {
+  it('P1 over-bids; P2 calls liar; P1 loses die and starts next', () => {
+    // P1 [5,5,2,3,4], P2 [2,3,4,5,6], P3 [1,2,3,4,6] → fives: 3, ones (wild): 1 → 4 fives total
+    // P1 bids 5 fives → over → caller (P2) WINS, bidder (P1) loses
+    const dice = [[5,5,2,3,4], [2,3,4,5,6], [1,2,3,4,6]];
+    let prev = null;
+    assert(isValidRaise({quantity:5, face:5}, prev, false));
+    prev = {quantity:5, face:5};
+    const r = resolveLiar(prev, dice.flat());
+    assertEq(r.actualCount, 4);
+    assertEq(r.bidHolds, false);
+    assertEq(r.loser, 'bidder');
+    // P1 (idx 0) is the bidder/loser
+    const dc = applyDiceChange(5, -1);
+    assertEq(dc, {newCount: 4, eliminated: false});
+    // P1 still alive → starts next round
+    const players = mkPlayersAlive([[4,true],[5,true],[5,true]]);
+    assertEq(nextStarter(players, 0), 0);
+  });
+});
+
+describe('integration · full round liar call (wrong)', () => {
+  it('Bid holds; caller loses die and starts next', () => {
+    // P1 [3,3,2,2,4], P2 [3,2,2,1,5] → threes: 3 + ones wild: 1 = 4
+    // Bid 3 threes → holds → caller loses
+    const dice = [[3,3,2,2,4], [3,2,2,1,5]];
+    const r = resolveLiar({quantity:3, face:3}, dice.flat());
+    assertEq(r.actualCount, 4);
+    assertEq(r.bidHolds, true);
+    assertEq(r.loser, 'caller');
+  });
+});
+
+describe('integration · 1s lock chain', () => {
+  it('opener bids 2 ones → locks; next must bid 3+ ones', () => {
+    const opener = {quantity:2, face:1};
+    assert(isValidRaise(opener, null, false));
+    // After opening on 1s, the round is locked. Validate subsequent bids:
+    assert(isValidRaise({quantity:3, face:1}, opener, true));
+    assert(!isValidRaise({quantity:2, face:1}, opener, true), 'same count when locked');
+    assert(!isValidRaise({quantity:3, face:2}, opener, true), 'non-1 face when locked');
+    assert(!isValidRaise({quantity:5, face:6}, opener, true), 'face 6 when locked');
+  });
+  it('liar resolution on 1s bid counts only 1s', () => {
+    const dice = [1,1,2,3,4, 1,1,3,4,5];
+    const r = resolveLiar({quantity:3, face:1}, dice);
+    assertEq(r.actualCount, 4);
+    assertEq(r.bidHolds, true);
+  });
+});
+
+describe('integration · spot-on right (caller gains die)', () => {
+  it('caller with 5 dice gains a 6th (no cap)', () => {
+    // Dice: 3 fours + 1 one = 4
+    const dice = [4,4,1,2,3, 4,5,6,2,3];
+    const r = resolveSpotOn({quantity:4, face:4}, dice);
+    assertEq(r, {actualCount: 4, exact: true, diceChange: +1});
+    const dc = applyDiceChange(5, r.diceChange);
+    assertEq(dc, {newCount: 6, eliminated: false});
+    // Even further: caller already at 7 → 8
+    assertEq(applyDiceChange(7, +1), {newCount: 8, eliminated: false});
+  });
+  it('spot-on caller starts next round (alive)', () => {
+    const ps = mkPlayersAlive([[5,true],[6,true],[5,true]]);
+    assertEq(nextStarter(ps, 1), 1);
+  });
+});
+
+describe('integration · spot-on wrong (caller loses die)', () => {
+  it('off by one → caller loses die', () => {
+    const dice = [4,4,4,2,3, 4,5,6,2,3]; // four 4s + 0 ones = 4
+    const r = resolveSpotOn({quantity:3, face:4}, dice);
+    assertEq(r, {actualCount: 4, exact: false, diceChange: -1});
+  });
+  it('caller with 1 die calls spot-on wrong → eliminated', () => {
+    const dc = applyDiceChange(1, -1);
+    assertEq(dc, {newCount: 0, eliminated: true});
+    // Eliminated caller → next alive starts
+    const ps = mkPlayersAlive([[5,true],[0,false],[5,true]]);
+    assertEq(nextStarter(ps, 1), 2);
+  });
+});
+
+describe('integration · elimination chain', () => {
+  it('liar call right eliminates bidder with 1 die', () => {
+    const r = resolveLiar({quantity:5, face:6}, [6,1,2,3,4]); // 2 sixes (1 six + 1 wild)
+    assertEq(r.bidHolds, false);
+    assertEq(r.loser, 'bidder');
+    const dc = applyDiceChange(1, -1);
+    assertEq(dc.eliminated, true);
+  });
+  it('game over after final elimination', () => {
+    const players = mkPlayersAlive([[3,true],[0,false],[0,false]]);
+    const w = gameWinner(players);
+    assert(w && w.name === 'P1', 'expected P1 to win');
+  });
+  it('game ongoing with 2+ alive', () => {
+    const players = mkPlayersAlive([[3,true],[1,true],[0,false]]);
+    assertEq(gameWinner(players), false);
+  });
+});
+
+describe('integration · multi-step raise chain', () => {
+  it('typical bid sequence', () => {
+    let prev = null;
+    const lock = false;
+    // open: 2 3s
+    assert(isValidRaise({quantity:2, face:3}, prev, lock)); prev = {quantity:2, face:3};
+    // 2 5s (same count, higher face)
+    assert(isValidRaise({quantity:2, face:5}, prev, lock)); prev = {quantity:2, face:5};
+    // 3 5s (higher count, same face)
+    assert(isValidRaise({quantity:3, face:5}, prev, lock)); prev = {quantity:3, face:5};
+    // 5 6s (higher count, higher face)
+    assert(isValidRaise({quantity:5, face:6}, prev, lock)); prev = {quantity:5, face:6};
+    // 6 6s
+    assert(isValidRaise({quantity:6, face:6}, prev, lock));
+    // 5 5s → invalid (lower face)
+    assert(!isValidRaise({quantity:5, face:5}, prev, lock));
+  });
+  it('a bid that lowers face but raises count is still invalid', () => {
+    // prev = 2 5s, attempt 3 4s → face 4 < 5 → invalid
+    assert(!isValidRaise({quantity:3, face:4}, {quantity:2, face:5}, false));
+  });
+});
+
+// ============ Defensive / malformed inputs ============
+describe('edge cases · malformed inputs', () => {
+  it('isValidRaise(null, ...) → false', () => {
+    assert(!isValidRaise(null, null, false));
+  });
+  it('isValidRaise with missing fields → false', () => {
+    assert(!isValidRaise({face: 3}, null, false));
+    assert(!isValidRaise({quantity: 2}, null, false));
+  });
+  it('countMatching with face outside 1-6 just counts (engine permissive)', () => {
+    // Engine doesn't validate face here; counts what matches literally.
+    assertEq(countMatching([2,3,4], 7), 0);
+  });
+  it('resolveLiar with zero dice on table', () => {
+    assertEq(resolveLiar({quantity:1, face:5}, []), {actualCount: 0, bidHolds: false, loser: 'bidder'});
+  });
+  it('resolveSpotOn with zero dice and bid 0 → exact (edge curiosity)', () => {
+    // q=0 wouldn't pass isValidRaise, but engine resolve is permissive:
+    assertEq(resolveSpotOn({quantity:0, face:5}, []), {actualCount: 0, exact: true, diceChange: +1});
+  });
+});
+
+// ============ rollDice (smoke) ============
+describe('rollDice · smoke', () => {
+  it('returns the requested number of dice', () => {
+    assertEq(rollDice(0).length, 0);
+    assertEq(rollDice(5).length, 5);
+    assertEq(rollDice(20).length, 20);
+  });
+  it('all rolls are integers in [1,6]', () => {
+    for (let trial = 0; trial < 50; trial++) {
+      const dice = rollDice(10);
+      for (const d of dice) {
+        assert(Number.isInteger(d) && d >= 1 && d <= 6, `bad die ${d}`);
+      }
+    }
+  });
+  it('over many rolls every face appears (statistical sanity)', () => {
+    const seen = new Set();
+    for (let i = 0; i < 500 && seen.size < 6; i++) {
+      for (const d of rollDice(6)) seen.add(d);
+    }
+    assertEq(seen.size, 6, `missing faces: only saw ${[...seen]}`);
+  });
+});
+
+// ============ RUN ============
+function runTests() {
+  const resultsEl = document.getElementById('results');
+  let totalPass = 0, totalFail = 0;
+  for (const g of groups) {
+    const groupEl = document.createElement('div');
+    groupEl.className = 'group';
+    const title = document.createElement('h3');
+    title.textContent = g.name;
+    groupEl.appendChild(title);
+    const meta = document.createElement('div');
+    meta.className = 'group-meta';
+    groupEl.appendChild(meta);
+    let gp = 0, gf = 0;
+    for (const t of g.tests) {
+      const testEl = document.createElement('div');
+      try {
+        t.fn();
+        testEl.className = 'test pass';
+        testEl.textContent = t.name;
+        gp++; totalPass++;
+      } catch (e) {
+        testEl.className = 'test fail';
+        testEl.textContent = t.name;
+        const err = document.createElement('div');
+        err.className = 'error';
+        err.textContent = e.message;
+        testEl.appendChild(err);
+        gf++; totalFail++;
+      }
+      groupEl.appendChild(testEl);
+    }
+    meta.textContent = `${gp} passed${gf ? ` · ${gf} failed` : ''}`;
+    resultsEl.appendChild(groupEl);
+  }
+  const summary = document.getElementById('summary');
+  summary.className = `summary ${totalFail === 0 ? 'ok' : 'fail'}`;
+  summary.textContent = totalFail === 0
+    ? `✓ All ${totalPass} tests passed`
+    : `✗ ${totalFail} failed · ${totalPass} passed (${totalPass + totalFail} total)`;
+}
+
+runTests();
+</script>
+
+</body>
+</html>
